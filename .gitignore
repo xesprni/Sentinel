@@ -32,3 +32,8 @@ Thumbs.db
 # flattened pom file
 .flattened-pom.xml
 node_modules/
+.agent/
+.claude/
+.codex/
+AGENTS.md
+CLAUDE.md
