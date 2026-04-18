@@ -37,3 +37,4 @@ node_modules/
 .codex/
 AGENTS.md
 CLAUDE.md
+.vscode/

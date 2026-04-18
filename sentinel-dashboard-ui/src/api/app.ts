@@ -1,4 +1,4 @@
-import { get, post } from "./client";
+import { get, postWithParams } from "./client";
 import type { Result } from "./types";
 import type { AppName, AppBriefInfo, MachineInfo } from "@/types/app";
 
@@ -15,5 +15,5 @@ export function getMachines(app: string): Promise<Result<MachineInfo[]>> {
 }
 
 export function removeMachine(app: string, ip: string, port: number): Promise<Result<null>> {
-  return post(`app/${app}/machine/remove.json`, { ip, port });
+  return postWithParams(`app/${app}/machine/remove.json`, { ip, port });
 }

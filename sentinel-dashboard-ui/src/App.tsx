@@ -1,7 +1,8 @@
-import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { AppLayout } from "@/components/layout/app-layout";
 import LoginPage from "@/pages/login";
 import HomePage from "@/pages/home";
@@ -21,6 +22,7 @@ import ClusterSingleConfigPage from "@/pages/cluster/single-config";
 import GatewayIdentityPage from "@/pages/gateway/identity";
 import GatewayApiPage from "@/pages/gateway/api-management";
 import GatewayFlowPage from "@/pages/gateway/flow";
+import { useEffect, useState } from "react";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,53 +33,92 @@ const queryClient = new QueryClient({
   },
 });
 
-function ProtectedLayout() {
-  return <AppLayout />;
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, check } = useAuth();
+  const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    check().finally(() => setChecking(false));
+  }, [check]);
+
+  useEffect(() => {
+    if (!checking && !isAuthenticated) {
+      navigate("/login", { replace: true });
+    }
+  }, [checking, isAuthenticated, navigate]);
+
+  if (checking) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return null;
+
+  return <>{children}</>;
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+
+      <Route
+        element={
+          <ProtectedRoute>
+            <AppLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/dashboard/home" element={<HomePage />} />
+        <Route path="/dashboard/home/:app" element={<HomePage />} />
+
+        {/* Core rule pages */}
+        <Route path="/dashboard/flow/:app" element={<FlowV1Page />} />
+        <Route path="/dashboard/v2/flow/:app" element={<FlowV2Page />} />
+        <Route path="/dashboard/degrade/:app" element={<DegradePage />} />
+        <Route path="/dashboard/system/:app" element={<SystemPage />} />
+        <Route path="/dashboard/authority/:app" element={<AuthorityPage />} />
+        <Route path="/dashboard/paramFlow/:app" element={<ParamFlowPage />} />
+
+        {/* Monitoring */}
+        <Route path="/dashboard/metric/:app" element={<MetricPage />} />
+        <Route path="/dashboard/identity/:app" element={<IdentityPage />} />
+
+        {/* Machine */}
+        <Route path="/dashboard/app/:app" element={<MachinePage />} />
+
+        {/* Cluster flow control */}
+        <Route path="/dashboard/cluster/server/:app" element={<ClusterServerListPage />} />
+        <Route path="/dashboard/cluster/client/:app" element={<ClusterClientListPage />} />
+        <Route path="/dashboard/cluster/assign_manage/:app" element={<ClusterAssignManagePage />} />
+        <Route path="/dashboard/cluster/single/:app" element={<ClusterSingleConfigPage />} />
+
+        {/* Gateway */}
+        <Route path="/dashboard/gateway/identity/:app" element={<GatewayIdentityPage />} />
+        <Route path="/dashboard/gateway/api/:app" element={<GatewayApiPage />} />
+        <Route path="/dashboard/gateway/flow/:app" element={<GatewayFlowPage />} />
+      </Route>
+
+      <Route path="*" element={<Navigate to="/dashboard/home" replace />} />
+    </Routes>
+  );
 }
 
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <HashRouter>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-
-            <Route element={<ProtectedLayout />}>
-              <Route path="/dashboard/home" element={<HomePage />} />
-
-              {/* Core rule pages */}
-              <Route path="/dashboard/flow/:app" element={<FlowV1Page />} />
-              <Route path="/dashboard/v2/flow/:app" element={<FlowV2Page />} />
-              <Route path="/dashboard/degrade/:app" element={<DegradePage />} />
-              <Route path="/dashboard/system/:app" element={<SystemPage />} />
-              <Route path="/dashboard/authority/:app" element={<AuthorityPage />} />
-              <Route path="/dashboard/paramFlow/:app" element={<ParamFlowPage />} />
-
-              {/* Monitoring */}
-              <Route path="/dashboard/metric/:app" element={<MetricPage />} />
-              <Route path="/dashboard/identity/:app" element={<IdentityPage />} />
-
-              {/* Machine */}
-              <Route path="/dashboard/app/:app" element={<MachinePage />} />
-
-              {/* Cluster flow control */}
-              <Route path="/dashboard/cluster/server/:app" element={<ClusterServerListPage />} />
-              <Route path="/dashboard/cluster/client/:app" element={<ClusterClientListPage />} />
-              <Route path="/dashboard/cluster/assign_manage/:app" element={<ClusterAssignManagePage />} />
-              <Route path="/dashboard/cluster/single/:app" element={<ClusterSingleConfigPage />} />
-
-              {/* Gateway */}
-              <Route path="/dashboard/gateway/identity/:app" element={<GatewayIdentityPage />} />
-              <Route path="/dashboard/gateway/api/:app" element={<GatewayApiPage />} />
-              <Route path="/dashboard/gateway/flow/:app" element={<GatewayFlowPage />} />
-            </Route>
-
-            <Route path="*" element={<Navigate to="/dashboard/home" replace />} />
-          </Routes>
-        </HashRouter>
-        <Toaster />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <HashRouter>
+            <AppRoutes />
+          </HashRouter>
+          <Toaster />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

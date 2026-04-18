@@ -2,16 +2,20 @@ import { get, post } from "./client";
 import type { Result } from "./types";
 import type { ClusterAppState, ClusterServerState } from "@/types/cluster";
 
+export function getClusterAppState(app: string): Promise<Result<ClusterAppState[]>> {
+  return get(`cluster/state/${app}`);
+}
+
 export function getClusterServerState(app: string): Promise<Result<ClusterServerState[]>> {
-  return get(`cluster/server/${app}`);
+  return get(`cluster/server_state/${app}`);
 }
 
 export function getClusterClientState(app: string): Promise<Result<ClusterAppState[]>> {
-  return get(`cluster/client/${app}`);
+  return get(`cluster/client_state/${app}`);
 }
 
 export function getClusterSingleState(app: string, ip: string, port: number): Promise<Result<ClusterAppState>> {
-  return get(`cluster/single/${app}`, { ip, port });
+  return get("cluster/state_single", { app, ip, port });
 }
 
 export function modifyClusterSingleConfig(app: string, ip: string, port: number, config: Record<string, unknown>): Promise<Result<null>> {

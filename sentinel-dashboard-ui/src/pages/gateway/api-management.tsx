@@ -28,8 +28,8 @@ export default function GatewayApiPage() {
 
   const { data: apis = [] } = useQuery({
     queryKey: ["gateway-api", app, ip, port],
-    queryFn: async () => { const res = await gatewayApiApi.getGatewayApiList(app, ip, port); return res.data || []; },
-    enabled: !!app,
+    queryFn: async () => { const res = await gatewayApiApi.getGatewayApiList(app, ip!, port!); return res.data || []; },
+    enabled: !!app && !!ip && !!port,
   });
 
   const addMut = useMutation({

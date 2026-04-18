@@ -26,7 +26,7 @@ export default function GatewayIdentityPage() {
   const { data: nodes = [] } = useQuery({
     queryKey: ["gateway-identity", app, ip, port],
     queryFn: async () => {
-      const res = await getMachineResources(app, ip, port);
+      const res = await getMachineResources(ip, port);
       return flatten(res.data || []);
     },
     enabled: !!app && !!ip && !!port,

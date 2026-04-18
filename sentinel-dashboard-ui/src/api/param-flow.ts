@@ -2,8 +2,8 @@ import { get, post, put, del } from "./client";
 import type { Result } from "./types";
 import type { ParamFlowRule } from "@/types/rule";
 
-export function getParamFlowRules(app: string, ip?: string, port?: number): Promise<Result<ParamFlowRule[]>> {
-  return get("paramFlow/rules", { app, ...(ip && { ip }), ...(port && { port }) });
+export function getParamFlowRules(app: string, ip: string, port: number): Promise<Result<ParamFlowRule[]>> {
+  return get("paramFlow/rules", { app, ip, port });
 }
 
 export function addParamFlowRule(rule: ParamFlowRule): Promise<Result<null>> {

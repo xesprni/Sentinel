@@ -1,9 +1,9 @@
-import { get, post, put, del } from "./client";
+import { get, post, del, putWithParams } from "./client";
 import type { Result } from "./types";
 import type { FlowRule } from "@/types/rule";
 
-export function getFlowRules(app: string, ip?: string, port?: number): Promise<Result<FlowRule[]>> {
-  return get("v1/flow/rules", { app, ...(ip && { ip }), ...(port && { port }) });
+export function getFlowRules(app: string, ip: string, port: number): Promise<Result<FlowRule[]>> {
+  return get("v1/flow/rules", { app, ip, port });
 }
 
 export function addFlowRule(rule: FlowRule): Promise<Result<null>> {
@@ -11,7 +11,7 @@ export function addFlowRule(rule: FlowRule): Promise<Result<null>> {
 }
 
 export function updateFlowRule(rule: FlowRule): Promise<Result<null>> {
-  return put("v1/flow/save.json", rule);
+  return putWithParams("v1/flow/save.json", rule as unknown as Record<string, string | number | boolean>);
 }
 
 export function deleteFlowRule(id: number): Promise<Result<null>> {

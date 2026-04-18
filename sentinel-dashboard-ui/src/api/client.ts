@@ -35,4 +35,12 @@ export async function del<T>(url: string, searchParams?: Record<string, string |
   return apiClient.delete(url, { searchParams }).json<Result<T>>();
 }
 
+export async function postWithParams<T>(url: string, searchParams?: Record<string, string | number | boolean>): Promise<Result<T>> {
+  return apiClient.post(url, { searchParams }).json<Result<T>>();
+}
+
+export async function putWithParams<T>(url: string, searchParams?: Record<string, string | number | boolean>): Promise<Result<T>> {
+  return apiClient.put(url, { searchParams }).json<Result<T>>();
+}
+
 export default apiClient;

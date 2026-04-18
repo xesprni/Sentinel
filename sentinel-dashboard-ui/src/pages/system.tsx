@@ -6,8 +6,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { MachineSelector } from "@/components/shared/app-selector";
 import { SearchInput } from "@/components/shared/search-input";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { EmptyState } from "@/components/shared/empty-state";
 import { SystemRuleDialog } from "@/components/rules/system-rule-dialog";
 import { useMachines } from "@/hooks/use-machines";
+import { Pencil, Trash2, Plus, RefreshCw } from "lucide-react";
 import * as systemApi from "@/api/system";
 import { toast } from "sonner";
 import type { SystemRule } from "@/types/rule";
@@ -35,10 +37,10 @@ export default function SystemPage() {
   const ip = mp[0] || undefined;
   const port = mp[1] ? Number(mp[1]) : undefined;
 
-  const { data: rules = [] } = useQuery({
+  const { data: rules = [], isLoading } = useQuery({
     queryKey: ["system", app, ip, port],
-    queryFn: async () => { const res = await systemApi.getSystemRules(app, ip, port); return res.data || []; },
-    enabled: !!app,
+    queryFn: async () => { const res = await systemApi.getSystemRules(app, ip!, port!); return res.data || []; },
+    enabled: !!app && !!ip && !!port,
   });
 
   const addMut = useMutation({
@@ -67,38 +69,51 @@ export default function SystemPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">系统规则 — {app}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold">系统规则</h1>
+        <span className="text-sm text-muted-foreground">{filtered.length} 条规则</span>
+      </div>
       <div className="flex items-center gap-2">
         <MachineSelector machines={machines || []} value={selectedMachine} onValueChange={setSelectedMachine} />
         <SearchInput value={search} onChange={setSearch} placeholder="搜索阈值类型" />
-        <Button variant="outline" size="sm" onClick={() => qc.invalidateQueries({ queryKey: ["system"] })}>刷新</Button>
-        <Button size="sm" onClick={() => { setEditRule(null); setDialogOpen(true); }}>新增</Button>
+        <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => qc.invalidateQueries({ queryKey: ["system"] })}><RefreshCw className="h-4 w-4" /></Button>
+        <Button size="sm" disabled={!selectedMachine} onClick={() => { setEditRule(null); setDialogOpen(true); }}><Plus className="h-4 w-4 mr-1" />新增</Button>
       </div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>阈值类型</TableHead>
-            <TableHead>阈值</TableHead>
-            <TableHead>操作</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filtered.map((r) => {
-            const info = getThresholdInfo(r);
-            return (
-              <TableRow key={r.id}>
-                <TableCell>{info.type}</TableCell>
-                <TableCell>{info.value}</TableCell>
-                <TableCell className="space-x-1">
-                  <Button variant="ghost" size="sm" onClick={() => { setEditRule(r); setDialogOpen(true); }}>编辑</Button>
-                  <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setDeleteTarget(r)}>删除</Button>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-          {filtered.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">暂无数据</TableCell></TableRow>}
-        </TableBody>
-      </Table>
+
+      {!selectedMachine ? (
+        <EmptyState title="请先选择一台机器" description="选择目标机器后查看和管理系统规则" />
+      ) : isLoading ? (
+        <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-10 bg-muted animate-pulse rounded" />)}</div>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>阈值类型</TableHead>
+              <TableHead>阈值</TableHead>
+              <TableHead className="w-[100px]">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.map((r) => {
+              const info = getThresholdInfo(r);
+              return (
+                <TableRow key={r.id}>
+                  <TableCell className="font-medium">{info.type}</TableCell>
+                  <TableCell>{info.value}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditRule(r); setDialogOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteTarget(r)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+            {filtered.length === 0 && <TableRow><TableCell colSpan={3}><EmptyState title="暂无规则" description="点击「新增」按钮添加系统规则" /></TableCell></TableRow>}
+          </TableBody>
+        </Table>
+      )}
+
       <SystemRuleDialog open={dialogOpen} onOpenChange={setDialogOpen} rule={editRule} onSubmit={handleSubmit} />
       <ConfirmDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)} title="确认删除" description="确定要删除此系统规则吗？" onConfirm={() => { if (deleteTarget?.id) deleteMut.mutate(deleteTarget.id); setDeleteTarget(null); }} />
     </div>

@@ -1,8 +1,18 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, createContext, useContext } from "react";
 import { checkAuth, login, logout } from "@/api/auth";
 import type { LoginParams } from "@/api/auth";
 
-export function useAuth() {
+interface AuthState {
+  isAuthenticated: boolean;
+  loading: boolean;
+  check: () => Promise<boolean>;
+  signIn: (params: LoginParams) => Promise<{ success: boolean; msg?: string }>;
+  signOut: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthState | null>(null);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -42,5 +52,15 @@ export function useAuth() {
     }
   }, []);
 
-  return { isAuthenticated, loading, check, signIn, signOut };
+  return (
+    <AuthContext.Provider value={{ isAuthenticated, loading, check, signIn, signOut }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
 }

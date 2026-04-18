@@ -26,7 +26,7 @@ export function queryByAppAndResource(
 ): Promise<Result<MetricData[]>> {
   return get("metric/queryByAppAndResource.json", {
     app,
-    resource,
+    identity: resource,
     startTime,
     endTime,
   });

@@ -7,8 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { MachineSelector } from "@/components/shared/app-selector";
 import { SearchInput } from "@/components/shared/search-input";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { EmptyState } from "@/components/shared/empty-state";
 import { DegradeRuleDialog } from "@/components/rules/degrade-rule-dialog";
 import { useMachines } from "@/hooks/use-machines";
+import { Pencil, Trash2, Plus, RefreshCw } from "lucide-react";
 import * as degradeApi from "@/api/degrade";
 import { toast } from "sonner";
 import type { DegradeRule } from "@/types/rule";
@@ -29,10 +31,10 @@ export default function DegradePage() {
   const ip = mp[0] || undefined;
   const port = mp[1] ? Number(mp[1]) : undefined;
 
-  const { data: rules = [] } = useQuery({
+  const { data: rules = [], isLoading } = useQuery({
     queryKey: ["degrade", app, ip, port],
-    queryFn: async () => { const res = await degradeApi.getDegradeRules(app, ip, port); return res.data || []; },
-    enabled: !!app,
+    queryFn: async () => { const res = await degradeApi.getDegradeRules(app, ip!, port!); return res.data || []; },
+    enabled: !!app && !!ip && !!port,
   });
 
   const addMut = useMutation({
@@ -58,43 +60,56 @@ export default function DegradePage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">熔断规则 — {app}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold">熔断规则</h1>
+        <Badge variant="secondary">{filtered.length} 条规则</Badge>
+      </div>
       <div className="flex items-center gap-2">
         <MachineSelector machines={machines || []} value={selectedMachine} onValueChange={setSelectedMachine} />
         <SearchInput value={search} onChange={setSearch} />
-        <Button variant="outline" size="sm" onClick={() => qc.invalidateQueries({ queryKey: ["degrade"] })}>刷新</Button>
-        <Button size="sm" onClick={() => { setEditRule(null); setDialogOpen(true); }}>新增</Button>
+        <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => qc.invalidateQueries({ queryKey: ["degrade"] })}><RefreshCw className="h-4 w-4" /></Button>
+        <Button size="sm" disabled={!selectedMachine} onClick={() => { setEditRule(null); setDialogOpen(true); }}><Plus className="h-4 w-4 mr-1" />新增</Button>
       </div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>资源名</TableHead>
-            <TableHead>来源</TableHead>
-            <TableHead>策略</TableHead>
-            <TableHead>阈值</TableHead>
-            <TableHead>熔断时长(s)</TableHead>
-            <TableHead>最小请求数</TableHead>
-            <TableHead>操作</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filtered.map((r) => (
-            <TableRow key={r.id}>
-              <TableCell>{r.resource}</TableCell>
-              <TableCell>{r.limitApp}</TableCell>
-              <TableCell><Badge variant="outline">{gradeMap[r.grade] ?? r.grade}</Badge></TableCell>
-              <TableCell>{r.count}</TableCell>
-              <TableCell>{r.timeWindow}</TableCell>
-              <TableCell>{r.minRequestAmount}</TableCell>
-              <TableCell className="space-x-1">
-                <Button variant="ghost" size="sm" onClick={() => { setEditRule(r); setDialogOpen(true); }}>编辑</Button>
-                <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setDeleteTarget(r)}>删除</Button>
-              </TableCell>
+
+      {!selectedMachine ? (
+        <EmptyState title="请先选择一台机器" description="选择目标机器后查看和管理熔断规则" />
+      ) : isLoading ? (
+        <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-10 bg-muted animate-pulse rounded" />)}</div>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>资源名</TableHead>
+              <TableHead>来源</TableHead>
+              <TableHead>策略</TableHead>
+              <TableHead>阈值</TableHead>
+              <TableHead>熔断时长(s)</TableHead>
+              <TableHead>最小请求数</TableHead>
+              <TableHead className="w-[100px]">操作</TableHead>
             </TableRow>
-          ))}
-          {filtered.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">暂无数据</TableCell></TableRow>}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {filtered.map((r) => (
+              <TableRow key={r.id}>
+                <TableCell className="font-medium">{r.resource}</TableCell>
+                <TableCell>{r.limitApp}</TableCell>
+                <TableCell><Badge variant="outline">{gradeMap[r.grade] ?? r.grade}</Badge></TableCell>
+                <TableCell>{r.count}</TableCell>
+                <TableCell>{r.timeWindow}</TableCell>
+                <TableCell>{r.minRequestAmount}</TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditRule(r); setDialogOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteTarget(r)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+            {filtered.length === 0 && <TableRow><TableCell colSpan={7}><EmptyState title="暂无规则" description="点击「新增」按钮添加熔断规则" /></TableCell></TableRow>}
+          </TableBody>
+        </Table>
+      )}
+
       <DegradeRuleDialog open={dialogOpen} onOpenChange={setDialogOpen} rule={editRule} onSubmit={handleSubmit} />
       <ConfirmDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)} title="确认删除" description={`确定要删除规则「${deleteTarget?.resource}」吗？`} onConfirm={() => { if (deleteTarget?.id) deleteMut.mutate(deleteTarget.id); setDeleteTarget(null); }} />
     </div>

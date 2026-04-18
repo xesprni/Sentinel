@@ -1,9 +1,9 @@
-import { get, post } from "./client";
+import { get, post, postWithParams } from "./client";
 import type { Result } from "./types";
 import type { GatewayFlowRule } from "@/types/gateway";
 
-export function getGatewayFlowList(app: string, ip?: string, port?: number): Promise<Result<GatewayFlowRule[]>> {
-  return get("gateway/flow/list.json", { app, ...(ip && { ip }), ...(port && { port }) });
+export function getGatewayFlowList(app: string, ip: string, port: number): Promise<Result<GatewayFlowRule[]>> {
+  return get("gateway/flow/list.json", { app, ip, port });
 }
 
 export function addGatewayFlowRule(rule: GatewayFlowRule): Promise<Result<null>> {
@@ -15,5 +15,5 @@ export function updateGatewayFlowRule(rule: GatewayFlowRule): Promise<Result<nul
 }
 
 export function deleteGatewayFlowRule(id: number): Promise<Result<null>> {
-  return post("gateway/flow/delete.json", { id });
+  return postWithParams("gateway/flow/delete.json", { id });
 }

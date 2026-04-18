@@ -8,10 +8,12 @@ export function AppLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar collapsed={sidebarCollapsed} />
+      <div className="shrink-0 transition-all duration-200" style={{ width: sidebarCollapsed ? 0 : 256 }}>
+        <Sidebar collapsed={sidebarCollapsed} />
+      </div>
       <div className="flex-1 flex flex-col min-w-0">
-        <Header onToggleSidebar={() => setSidebarCollapsed((v) => !v)} />
-        <main className="flex-1 overflow-auto p-4">
+        <Header onToggleSidebar={() => setSidebarCollapsed((v) => !v)} collapsed={sidebarCollapsed} />
+        <main className="flex-1 overflow-auto p-6">
           <Outlet />
         </main>
       </div>

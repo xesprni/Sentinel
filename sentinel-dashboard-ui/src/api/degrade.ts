@@ -2,8 +2,8 @@ import { get, post, put, del } from "./client";
 import type { Result } from "./types";
 import type { DegradeRule } from "@/types/rule";
 
-export function getDegradeRules(app: string, ip?: string, port?: number): Promise<Result<DegradeRule[]>> {
-  return get("degrade/rules.json", { app, ...(ip && { ip }), ...(port && { port }) });
+export function getDegradeRules(app: string, ip: string, port: number): Promise<Result<DegradeRule[]>> {
+  return get("degrade/rules.json", { app, ip, port });
 }
 
 export function addDegradeRule(rule: DegradeRule): Promise<Result<null>> {

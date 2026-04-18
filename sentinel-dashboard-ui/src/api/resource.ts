@@ -15,6 +15,6 @@ export interface ResourceNode {
   children?: ResourceNode[];
 }
 
-export function getMachineResources(app: string, ip: string, port: number, type?: string): Promise<Result<ResourceNode[]>> {
-  return get("resource/machineResource.json", { app, ip, port, ...(type && { type }) });
+export function getMachineResources(ip: string, port: number, type?: string): Promise<Result<ResourceNode[]>> {
+  return get("resource/machineResource.json", { ip, port, ...(type && { type }) });
 }

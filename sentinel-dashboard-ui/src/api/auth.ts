@@ -1,4 +1,4 @@
-import { post } from "./client";
+import { post, postWithParams } from "./client";
 import type { Result } from "./types";
 
 export interface LoginParams {
@@ -7,7 +7,7 @@ export interface LoginParams {
 }
 
 export function login(params: LoginParams): Promise<Result<null>> {
-  return post("auth/login", params);
+  return postWithParams("auth/login", params as unknown as Record<string, string | number | boolean>);
 }
 
 export function logout(): Promise<Result<null>> {

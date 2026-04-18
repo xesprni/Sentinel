@@ -27,8 +27,8 @@ export default function GatewayFlowPage() {
 
   const { data: rules = [] } = useQuery({
     queryKey: ["gateway-flow", app, ip, port],
-    queryFn: async () => { const res = await gatewayFlowApi.getGatewayFlowList(app, ip, port); return res.data || []; },
-    enabled: !!app,
+    queryFn: async () => { const res = await gatewayFlowApi.getGatewayFlowList(app, ip!, port!); return res.data || []; },
+    enabled: !!app && !!ip && !!port,
   });
 
   const addMut = useMutation({

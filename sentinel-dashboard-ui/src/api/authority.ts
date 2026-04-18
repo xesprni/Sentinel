@@ -2,8 +2,8 @@ import { get, post, put, del } from "./client";
 import type { Result } from "./types";
 import type { AuthorityRule } from "@/types/rule";
 
-export function getAuthorityRules(app: string, ip?: string, port?: number): Promise<Result<AuthorityRule[]>> {
-  return get("authority/rules", { app, ...(ip && { ip }), ...(port && { port }) });
+export function getAuthorityRules(app: string, ip: string, port: number): Promise<Result<AuthorityRule[]>> {
+  return get("authority/rules", { app, ip, port });
 }
 
 export function addAuthorityRule(rule: AuthorityRule): Promise<Result<null>> {

@@ -35,7 +35,7 @@ export default function IdentityPage() {
   const { data: rawNodes = [] } = useQuery({
     queryKey: ["identity", app, ip, port, type],
     queryFn: async () => {
-      const res = await getMachineResources(app, ip, port, type);
+      const res = await getMachineResources(ip, port, type);
       return res.data || [];
     },
     enabled: !!app && !!ip && !!port,
