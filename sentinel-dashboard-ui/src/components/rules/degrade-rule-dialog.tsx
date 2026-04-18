@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
   Dialog,
@@ -36,19 +37,28 @@ interface DegradeRuleDialogProps {
   onSubmit: (data: DegradeRule) => void;
 }
 
+const degradeLabels: Record<string, string> = { "0": "慢调用比例", "1": "异常比例", "2": "异常数" };
+
+const defaults: FormValues = {
+  resource: "", limitApp: "default", grade: 0, count: 0,
+  timeWindow: 10, minRequestAmount: 5, statIntervalMs: 1000,
+};
+
 export function DegradeRuleDialog({ open, onOpenChange, rule, onSubmit }: DegradeRuleDialogProps) {
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<FormValues>({
-    defaultValues: rule ?? {
-      resource: "", limitApp: "default", grade: 0, count: 0,
-      timeWindow: 10, minRequestAmount: 5, statIntervalMs: 1000,
-    },
+    defaultValues: defaults,
   });
+
+  useEffect(() => {
+    if (open) {
+      reset(rule ?? defaults);
+    }
+  }, [open, rule, reset]);
 
   const grade = watch("grade");
 
   const onFormSubmit = (data: FormValues) => {
     onSubmit({ ...rule, ...data } as DegradeRule);
-    reset();
     onOpenChange(false);
   };
 
@@ -71,8 +81,8 @@ export function DegradeRuleDialog({ open, onOpenChange, rule, onSubmit }: Degrad
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>熔断策略</Label>
-              <Select value={String(grade)} onValueChange={(v) => { if (v !== null) setValue("grade", Number(v)); }}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select value={String(grade)} onValueChange={(v) => setValue("grade", Number(v))}>
+                <SelectTrigger><SelectValue>{(v: string | null) => degradeLabels[v ?? ""] ?? v}</SelectValue></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="0">慢调用比例</SelectItem>
                   <SelectItem value="1">异常比例</SelectItem>

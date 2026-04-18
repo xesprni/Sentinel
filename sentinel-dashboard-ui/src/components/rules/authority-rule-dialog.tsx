@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
   Dialog,
@@ -25,16 +26,23 @@ interface AuthorityRuleDialogProps {
   onSubmit: (data: AuthorityRule) => void;
 }
 
+const defaults: FormValues = { resource: "", limitApp: "", strategy: 0 };
+
 export function AuthorityRuleDialog({ open, onOpenChange, rule, onSubmit }: AuthorityRuleDialogProps) {
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<FormValues>({
-    defaultValues: rule ?? { resource: "", limitApp: "", strategy: 0 },
+    defaultValues: defaults,
   });
+
+  useEffect(() => {
+    if (open) {
+      reset(rule ?? defaults);
+    }
+  }, [open, rule, reset]);
 
   const strategy = watch("strategy");
 
   const onFormSubmit = (data: FormValues) => {
     onSubmit({ ...rule, ...data } as AuthorityRule);
-    reset();
     onOpenChange(false);
   };
 

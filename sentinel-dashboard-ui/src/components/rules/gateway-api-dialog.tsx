@@ -25,6 +25,8 @@ interface GatewayApiDialogProps {
   onSubmit: (data: GatewayApiDefinition) => void;
 }
 
+const matchLabels: Record<string, string> = { "0": "URL", "1": "精确", "2": "正则", "3": "前缀" };
+
 export function GatewayApiDialog({ open, onOpenChange, rule, onSubmit }: GatewayApiDialogProps) {
   const [apiName, setApiName] = useState(rule?.apiName || "");
   const [items, setItems] = useState<GatewayApiPredicateItem[]>(
@@ -77,7 +79,7 @@ export function GatewayApiDialog({ open, onOpenChange, rule, onSubmit }: Gateway
                   value={String(item.matchStrategy)}
                   onValueChange={(v) => updateItem(idx, "matchStrategy", Number(v))}
                 >
-                  <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-32"><SelectValue>{(v: string | null) => matchLabels[v ?? ""] ?? v}</SelectValue></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="0">URL</SelectItem>
                     <SelectItem value="1">精确</SelectItem>

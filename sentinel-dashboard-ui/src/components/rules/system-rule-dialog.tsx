@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -27,22 +27,34 @@ interface SystemRuleDialogProps {
   onSubmit: (data: SystemRule) => void;
 }
 
+function detectType(rule: SystemRule | null | undefined): string {
+  if (!rule) return "highestSystemLoad";
+  if (rule.highestSystemLoad !== undefined) return "highestSystemLoad";
+  if (rule.highestCpuUsage !== undefined) return "highestCpuUsage";
+  if (rule.avgRt !== undefined) return "avgRt";
+  if (rule.maxThread !== undefined) return "maxThread";
+  return "qps";
+}
+
 export function SystemRuleDialog({ open, onOpenChange, rule, onSubmit }: SystemRuleDialogProps) {
-  const [type, setType] = useState(rule ? (
-    rule.highestSystemLoad !== undefined ? "highestSystemLoad" :
-    rule.highestCpuUsage !== undefined ? "highestCpuUsage" :
-    rule.avgRt !== undefined ? "avgRt" :
-    rule.maxThread !== undefined ? "maxThread" : "qps"
-  ) : "highestSystemLoad");
+  const [type, setType] = useState(detectType(rule));
   const [value, setValue] = useState(() => {
     if (!rule) return "0";
-    return String((rule as Record<string, unknown>)[type] ?? 0);
+    return String((rule as Record<string, unknown>)[detectType(rule)] ?? 0);
   });
+
+  // Reset when dialog opens
+  useEffect(() => {
+    if (open) {
+      const t = detectType(rule);
+      setType(t);
+      setValue(rule ? String((rule as Record<string, unknown>)[t] ?? 0) : "0");
+    }
+  }, [open, rule]);
 
   const handleSubmit = () => {
     const numVal = Number(value);
     const result: SystemRule = { ...rule };
-    // Clear all threshold fields
     delete result.highestSystemLoad;
     delete result.highestCpuUsage;
     delete result.avgRt;

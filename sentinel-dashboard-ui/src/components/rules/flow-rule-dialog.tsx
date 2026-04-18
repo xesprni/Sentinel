@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
   Dialog,
@@ -39,13 +40,25 @@ interface FlowRuleDialogProps {
   onSubmit: (data: FlowRule) => void;
 }
 
+const defaults: FormValues = {
+  resource: "", limitApp: "default", grade: 1, count: 0,
+  strategy: 0, controlBehavior: 0, clusterMode: false,
+};
+
+const gradeLabels: Record<string, string> = { "1": "QPS", "0": "并发线程数" };
+const strategyLabels: Record<string, string> = { "0": "直接", "1": "关联", "2": "链路" };
+const behaviorLabels: Record<string, string> = { "0": "快速失败", "1": "Warm Up", "2": "排队等待", "3": "预热+排队" };
+
 export function FlowRuleDialog({ open, onOpenChange, rule, onSubmit }: FlowRuleDialogProps) {
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<FormValues>({
-    defaultValues: rule ?? {
-      resource: "", limitApp: "default", grade: 1, count: 0,
-      strategy: 0, controlBehavior: 0, clusterMode: false,
-    },
+    defaultValues: defaults,
   });
+
+  useEffect(() => {
+    if (open) {
+      reset(rule ?? defaults);
+    }
+  }, [open, rule, reset]);
 
   const grade = watch("grade");
   const strategy = watch("strategy");
@@ -54,7 +67,6 @@ export function FlowRuleDialog({ open, onOpenChange, rule, onSubmit }: FlowRuleD
 
   const onFormSubmit = (data: FormValues) => {
     onSubmit({ ...rule, ...data } as FlowRule);
-    reset();
     onOpenChange(false);
   };
 
@@ -77,8 +89,8 @@ export function FlowRuleDialog({ open, onOpenChange, rule, onSubmit }: FlowRuleD
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>阈值类型</Label>
-              <Select value={String(grade)} onValueChange={(v) => { if (v !== null) setValue("grade", Number(v)); }}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select value={String(grade)} onValueChange={(v) => setValue("grade", Number(v))}>
+                <SelectTrigger><SelectValue>{(v: string | null) => gradeLabels[v ?? ""] ?? v}</SelectValue></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="1">QPS</SelectItem>
                   <SelectItem value="0">并发线程数</SelectItem>
@@ -94,8 +106,8 @@ export function FlowRuleDialog({ open, onOpenChange, rule, onSubmit }: FlowRuleD
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>流控模式</Label>
-              <Select value={String(strategy)} onValueChange={(v) => { if (v !== null) setValue("strategy", Number(v)); }}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select value={String(strategy)} onValueChange={(v) => setValue("strategy", Number(v))}>
+                <SelectTrigger><SelectValue>{(v: string | null) => strategyLabels[v ?? ""] ?? v}</SelectValue></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="0">直接</SelectItem>
                   <SelectItem value="1">关联</SelectItem>
@@ -105,8 +117,8 @@ export function FlowRuleDialog({ open, onOpenChange, rule, onSubmit }: FlowRuleD
             </div>
             <div className="space-y-2">
               <Label>流控效果</Label>
-              <Select value={String(controlBehavior)} onValueChange={(v) => { if (v !== null) setValue("controlBehavior", Number(v)); }}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select value={String(controlBehavior)} onValueChange={(v) => setValue("controlBehavior", Number(v))}>
+                <SelectTrigger><SelectValue>{(v: string | null) => behaviorLabels[v ?? ""] ?? v}</SelectValue></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="0">快速失败</SelectItem>
                   <SelectItem value="1">Warm Up</SelectItem>

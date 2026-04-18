@@ -9,8 +9,37 @@ import { SearchInput } from "@/components/shared/search-input";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TrendingUp } from "lucide-react";
 import * as metricApi from "@/api/metric";
+import type { MetricVo } from "@/api/metric";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
-import type { MetricResourceVO } from "@/types/metric";
+
+/** Summary row derived from latest MetricVo of a resource */
+interface ResourceSummary {
+  resource: string;
+  passQps: number;
+  blockQps: number;
+  rt: number;
+  successQps: number;
+  exceptionQps: number;
+}
+
+function toResourceSummaries(metricMap: Record<string, MetricVo[]> | null | undefined): ResourceSummary[] {
+  if (!metricMap) return [];
+  const summaries: ResourceSummary[] = [];
+  for (const [resource, vos] of Object.entries(metricMap)) {
+    if (!vos || vos.length === 0) continue;
+    // vos are sorted by timestamp, last one is latest
+    const latest = vos[vos.length - 1];
+    summaries.push({
+      resource,
+      passQps: latest.passQps ?? 0,
+      blockQps: latest.blockQps ?? 0,
+      rt: Math.round((latest.rt ?? 0) * 100) / 100,
+      successQps: latest.successQps ?? 0,
+      exceptionQps: latest.exceptionQps ?? 0,
+    });
+  }
+  return summaries;
+}
 
 export default function MetricPage() {
   const { app = "" } = useParams();
@@ -36,18 +65,14 @@ export default function MetricPage() {
       const end = Date.now();
       const start = end - 60 * 60 * 1000;
       const res = await metricApi.queryByAppAndResource(app, selectedResource, start, end);
-      return res.data || [];
+      return (res.data || []) as metricApi.MetricVo[];
     },
     enabled: !!selectedResource,
     refetchInterval: 10_000,
   });
 
-  const resources: MetricResourceVO[] = [];
-  if (topData?.metrics) {
-    for (const arr of Object.values(topData.metrics)) {
-      resources.push(...(arr as MetricResourceVO[]));
-    }
-  }
+  const metricMap = topData?.metric;
+  const resources = toResourceSummaries(metricMap);
 
   return (
     <div className="space-y-4">
@@ -72,22 +97,22 @@ export default function MetricPage() {
               <TableHead>通过 QPS</TableHead>
               <TableHead>拒绝 QPS</TableHead>
               <TableHead>平均 RT (ms)</TableHead>
-              <TableHead>线程数</TableHead>
+              <TableHead>成功 QPS</TableHead>
               <TableHead>异常 QPS</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {resources.map((r, idx) => (
+            {resources.map((r) => (
               <TableRow
-                key={`${r.resource}-${idx}`}
+                key={r.resource}
                 className={`cursor-pointer transition-colors ${selectedResource === r.resource ? "bg-accent" : ""}`}
                 onClick={() => setSelectedResource(r.resource)}
               >
                 <TableCell className="font-medium">{r.resource}</TableCell>
                 <TableCell className="text-emerald-600">{r.passQps}</TableCell>
                 <TableCell className="text-destructive font-medium">{r.blockQps}</TableCell>
-                <TableCell>{r.averageRt}</TableCell>
-                <TableCell>{r.threadCount}</TableCell>
+                <TableCell>{r.rt}</TableCell>
+                <TableCell>{r.successQps}</TableCell>
                 <TableCell>{r.exceptionQps}</TableCell>
               </TableRow>
             ))}

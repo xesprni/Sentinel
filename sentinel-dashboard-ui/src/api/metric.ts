@@ -1,6 +1,28 @@
 import { get } from "./client";
 import type { Result } from "./types";
-import type { MetricData, MetricResourceVO } from "@/types/metric";
+
+/** Matches backend MetricVo */
+export interface MetricVo {
+  id: number;
+  app: string;
+  resource: string;
+  timestamp: number;
+  passQps: number;
+  blockQps: number;
+  successQps: number;
+  exceptionQps: number;
+  rt: number;
+  count: number;
+}
+
+/** Backend queryTopResourceMetric response data */
+export interface MetricTopData {
+  totalCount: number;
+  totalPage: number;
+  pageIndex: number;
+  pageSize: number;
+  metric: Record<string, MetricVo[]>;
+}
 
 export function queryTopResourceMetric(
   app: string,
@@ -8,7 +30,7 @@ export function queryTopResourceMetric(
   pageSize: number,
   desc?: boolean,
   searchKey?: string,
-): Promise<Result<{ metrics: Record<string, MetricResourceVO[]>; totalPage: number }>> {
+): Promise<Result<MetricTopData>> {
   return get("metric/queryTopResourceMetric.json", {
     app,
     pageIndex,
@@ -23,7 +45,7 @@ export function queryByAppAndResource(
   resource: string,
   startTime: number,
   endTime: number,
-): Promise<Result<MetricData[]>> {
+): Promise<Result<MetricVo[]>> {
   return get("metric/queryByAppAndResource.json", {
     app,
     identity: resource,

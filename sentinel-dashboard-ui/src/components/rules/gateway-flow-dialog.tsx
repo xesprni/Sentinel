@@ -18,6 +18,9 @@ import {
 } from "@/components/ui/select";
 import type { GatewayFlowRule } from "@/types/gateway";
 
+const resourceModeLabels: Record<string, string> = { "0": "Route ID", "1": "API 分组" };
+const gwBehaviorLabels: Record<string, string> = { "0": "快速失败", "2": "排队等待" };
+
 interface GatewayFlowDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -57,7 +60,7 @@ export function GatewayFlowDialog({ open, onOpenChange, rule, onSubmit }: Gatewa
             <div className="space-y-2">
               <Label>资源类型</Label>
               <Select value={String(form.resourceMode)} onValueChange={(v) => update("resourceMode", Number(v))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue>{(v: string | null) => resourceModeLabels[v ?? ""] ?? v}</SelectValue></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="0">Route ID</SelectItem>
                   <SelectItem value="1">API 分组</SelectItem>
@@ -78,7 +81,7 @@ export function GatewayFlowDialog({ open, onOpenChange, rule, onSubmit }: Gatewa
           <div className="space-y-2">
             <Label>流控效果</Label>
             <Select value={String(form.controlBehavior ?? 0)} onValueChange={(v) => update("controlBehavior", Number(v))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger><SelectValue>{(v: string | null) => gwBehaviorLabels[v ?? ""] ?? v}</SelectValue></SelectTrigger>
               <SelectContent>
                 <SelectItem value="0">快速失败</SelectItem>
                 <SelectItem value="2">排队等待</SelectItem>

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import {
   Dialog,
@@ -29,13 +30,21 @@ interface ParamFlowRuleDialogProps {
   onSubmit: (data: ParamFlowRule) => void;
 }
 
+const defaults: FormValues = {
+  resource: "", grade: 1, paramIdx: 0, count: 0,
+  durationInSec: 1, clusterMode: false, paramFlowItemList: [],
+};
+
 export function ParamFlowRuleDialog({ open, onOpenChange, rule, onSubmit }: ParamFlowRuleDialogProps) {
   const { register, handleSubmit, setValue, watch, reset, control } = useForm<FormValues>({
-    defaultValues: rule ?? {
-      resource: "", grade: 1, paramIdx: 0, count: 0,
-      durationInSec: 1, clusterMode: false, paramFlowItemList: [],
-    },
+    defaultValues: defaults,
   });
+
+  useEffect(() => {
+    if (open) {
+      reset(rule ?? defaults);
+    }
+  }, [open, rule, reset]);
 
   const { fields, append, remove } = useFieldArray({ control, name: "paramFlowItemList" });
   const clusterMode = watch("clusterMode");
@@ -43,7 +52,6 @@ export function ParamFlowRuleDialog({ open, onOpenChange, rule, onSubmit }: Para
   const onFormSubmit = (data: FormValues) => {
     const payload: ParamFlowRule = { ...data, limitApp: "default" };
     onSubmit({ ...rule, ...payload });
-    reset();
     onOpenChange(false);
   };
 
