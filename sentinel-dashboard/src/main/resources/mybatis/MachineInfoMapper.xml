@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.alibaba.csp.sentinel.dashboard.repository.mapper.MachineInfoMapper">
+
+    <resultMap id="BaseResultMap" type="com.alibaba.csp.sentinel.dashboard.datasource.entity.MachineEntity">
+        <id column="id" property="id"/>
+        <result column="gmt_create" property="gmtCreate"/>
+        <result column="gmt_modified" property="gmtModified"/>
+        <result column="app" property="app"/>
+        <result column="app_type" property="appType"/>
+        <result column="ip" property="ip"/>
+        <result column="hostname" property="hostname"/>
+        <result column="port" property="port"/>
+        <result column="sentinel_version" property="sentinelVersion"/>
+        <result column="heartbeat_version" property="heartbeatVersion"/>
+        <result column="last_heartbeat" property="lastHeartbeat"/>
+        <result column="status" property="status"/>
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, gmt_create, gmt_modified, app, app_type, ip, hostname, port,
+        sentinel_version, heartbeat_version, last_heartbeat, status, is_deleted
+    </sql>
+
+    <insert id="insertOrUpdate" parameterType="com.alibaba.csp.sentinel.dashboard.datasource.entity.MachineEntity">
+        INSERT INTO sentinel_machine_info
+            (app, app_type, ip, hostname, port, sentinel_version, heartbeat_version, last_heartbeat, status, is_deleted)
+        VALUES
+            (#{app}, #{appType}, #{ip}, #{hostname}, #{port}, #{sentinelVersion}, #{heartbeatVersion}, #{lastHeartbeat}, #{status}, #{isDeleted})
+        ON DUPLICATE KEY UPDATE
+            app_type = #{appType},
+            hostname = #{hostname},
+            sentinel_version = #{sentinelVersion},
+            heartbeat_version = #{heartbeatVersion},
+            last_heartbeat = #{lastHeartbeat},
+            status = #{status},
+            is_deleted = #{isDeleted}
+    </insert>
+
+    <select id="getByAppAndIpAndPort" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sentinel_machine_info
+        WHERE app = #{app} AND ip = #{ip} AND port = #{port}
+          AND is_deleted = 0
+    </select>
+
+    <select id="listByApp" parameterType="string" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sentinel_machine_info
+        WHERE app = #{app} AND is_deleted = 0
+    </select>
+
+    <select id="listAliveByApp" parameterType="string" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sentinel_machine_info
+        WHERE app = #{app} AND status = 1 AND is_deleted = 0
+    </select>
+
+    <select id="listApps" resultType="string">
+        SELECT DISTINCT app
+        FROM sentinel_machine_info
+        WHERE status = 1 AND is_deleted = 0
+    </select>
+
+    <update id="updateStatus">
+        UPDATE sentinel_machine_info
+        SET status = #{status}
+        WHERE id = #{id}
+    </update>
+
+    <update id="deleteByAppAndIpAndPort">
+        UPDATE sentinel_machine_info
+        SET is_deleted = 1, status = 0
+        WHERE app = #{app} AND ip = #{ip} AND port = #{port}
+    </update>
+
+    <select id="countByApp" resultType="int">
+        SELECT COUNT(1)
+        FROM sentinel_machine_info
+        WHERE app = #{app} AND status = 1 AND is_deleted = 0
+    </select>
+
+    <update id="expireStaleMachines">
+        UPDATE sentinel_machine_info
+        SET status = 0
+        WHERE status = 1 AND is_deleted = 0
+          AND last_heartbeat &lt; #{threshold}
+    </update>
+
+</mapper>

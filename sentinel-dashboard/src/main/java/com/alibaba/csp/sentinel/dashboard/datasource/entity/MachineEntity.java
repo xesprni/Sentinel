@@ -20,17 +20,43 @@ import java.util.Date;
 import com.alibaba.csp.sentinel.dashboard.discovery.MachineInfo;
 
 /**
+ * Entity mapping to sentinel_machine_info table.
+ *
  * @author leyou
+ * @author Eric Zhao
  */
 public class MachineEntity {
     private Long id;
     private Date gmtCreate;
     private Date gmtModified;
     private String app;
+    private Integer appType;
     private String ip;
     private String hostname;
-    private Date timestamp;
     private Integer port;
+    private String sentinelVersion;
+    private Long heartbeatVersion;
+    private Long lastHeartbeat;
+    private Boolean status;
+    private Boolean isDeleted;
+
+    public MachineEntity() {
+    }
+
+    public static MachineEntity fromMachineInfo(MachineInfo machineInfo) {
+        MachineEntity entity = new MachineEntity();
+        entity.setApp(machineInfo.getApp());
+        entity.setAppType(machineInfo.getAppType());
+        entity.setHostname(machineInfo.getHostname());
+        entity.setIp(machineInfo.getIp());
+        entity.setPort(machineInfo.getPort());
+        entity.setSentinelVersion(machineInfo.getVersion());
+        entity.setHeartbeatVersion(machineInfo.getHeartbeatVersion());
+        entity.setLastHeartbeat(machineInfo.getLastHeartbeat());
+        entity.setStatus(true);
+        entity.setIsDeleted(false);
+        return entity;
+    }
 
     public long getId() {
         return id;
@@ -64,6 +90,14 @@ public class MachineEntity {
         this.app = app;
     }
 
+    public Integer getAppType() {
+        return appType;
+    }
+
+    public void setAppType(Integer appType) {
+        this.appType = appType;
+    }
+
     public String getIp() {
         return ip;
     }
@@ -80,14 +114,6 @@ public class MachineEntity {
         this.hostname = hostname;
     }
 
-    public Date getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(Date timestamp) {
-        this.timestamp = timestamp;
-    }
-
     public Integer getPort() {
         return port;
     }
@@ -96,16 +122,56 @@ public class MachineEntity {
         this.port = port;
     }
 
+    public String getSentinelVersion() {
+        return sentinelVersion;
+    }
+
+    public void setSentinelVersion(String sentinelVersion) {
+        this.sentinelVersion = sentinelVersion;
+    }
+
+    public Long getHeartbeatVersion() {
+        return heartbeatVersion;
+    }
+
+    public void setHeartbeatVersion(Long heartbeatVersion) {
+        this.heartbeatVersion = heartbeatVersion;
+    }
+
+    public Long getLastHeartbeat() {
+        return lastHeartbeat;
+    }
+
+    public void setLastHeartbeat(Long lastHeartbeat) {
+        this.lastHeartbeat = lastHeartbeat;
+    }
+
+    public Boolean getStatus() {
+        return status;
+    }
+
+    public void setStatus(Boolean status) {
+        this.status = status;
+    }
+
+    public Boolean getIsDeleted() {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Boolean isDeleted) {
+        this.isDeleted = isDeleted;
+    }
+
     public MachineInfo toMachineInfo() {
         MachineInfo machineInfo = new MachineInfo();
-
         machineInfo.setApp(app);
+        machineInfo.setAppType(appType != null ? appType : 0);
         machineInfo.setHostname(hostname);
         machineInfo.setIp(ip);
         machineInfo.setPort(port);
-        machineInfo.setLastHeartbeat(timestamp.getTime());
-        machineInfo.setHeartbeatVersion(timestamp.getTime());
-
+        machineInfo.setVersion(sentinelVersion);
+        machineInfo.setHeartbeatVersion(heartbeatVersion != null ? heartbeatVersion : 0L);
+        machineInfo.setLastHeartbeat(lastHeartbeat != null ? lastHeartbeat : 0L);
         return machineInfo;
     }
 
@@ -118,8 +184,9 @@ public class MachineEntity {
             ", app='" + app + '\'' +
             ", ip='" + ip + '\'' +
             ", hostname='" + hostname + '\'' +
-            ", timestamp=" + timestamp +
             ", port=" + port +
+            ", sentinelVersion='" + sentinelVersion + '\'' +
+            ", status=" + status +
             '}';
     }
 }

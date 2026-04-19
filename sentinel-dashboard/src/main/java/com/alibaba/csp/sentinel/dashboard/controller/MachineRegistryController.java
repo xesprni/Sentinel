@@ -16,6 +16,7 @@
 package com.alibaba.csp.sentinel.dashboard.controller;
 
 import com.alibaba.csp.sentinel.dashboard.discovery.AppManagement;
+import com.alibaba.csp.sentinel.dashboard.service.MachineInfoService;
 import com.alibaba.csp.sentinel.util.StringUtil;
 
 import com.alibaba.csp.sentinel.dashboard.discovery.MachineInfo;
@@ -39,6 +40,9 @@ public class MachineRegistryController {
 
     @Autowired
     private AppManagement appManagement;
+
+    @Autowired(required = false)
+    private MachineInfoService machineInfoService;
 
     @ResponseBody
     @RequestMapping("/machine")
@@ -79,6 +83,10 @@ public class MachineRegistryController {
             machineInfo.setLastHeartbeat(System.currentTimeMillis());
             machineInfo.setVersion(sentinelVersion);
             appManagement.addMachine(machineInfo);
+            // Persist to MySQL (if mysql profile is active)
+            if (machineInfoService != null) {
+                machineInfoService.registerMachine(machineInfo);
+            }
             return Result.ofSuccessMsg("success");
         } catch (Exception e) {
             logger.error("Receive heartbeat error", e);
