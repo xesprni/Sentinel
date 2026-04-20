@@ -23,6 +23,7 @@ import com.alibaba.csp.sentinel.dashboard.datasource.entity.MachineEntity;
 import com.alibaba.csp.sentinel.dashboard.discovery.MachineInfo;
 import com.alibaba.csp.sentinel.dashboard.repository.mapper.MachineInfoMapper;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
  * @author Eric Zhao
  */
 @Service
+@ConditionalOnProperty(name = "sentinel.mysql.enabled", havingValue = "true")
 public class MachineInfoServiceImpl implements MachineInfoService {
 
     private final MachineInfoMapper machineInfoMapper;
