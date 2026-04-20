@@ -66,6 +66,12 @@ public class ParamFlowRuleController {
     @Autowired
     private RuleRepository<ParamFlowRuleEntity, Long> repository;
 
+    @Autowired(required = false)
+    private com.alibaba.csp.sentinel.dashboard.service.ReleaseMessageService releaseMessageService;
+
+    @Autowired(required = false)
+    private com.alibaba.csp.sentinel.dashboard.service.RulePersistenceService rulePersistenceService;
+
     private boolean checkIfSupported(String app, String ip, int port) {
         try {
             return Optional.ofNullable(appManagement.getDetailApp(app))
@@ -260,7 +266,15 @@ public class ParamFlowRuleController {
 
     private CompletableFuture<Void> publishRules(String app, String ip, Integer port) {
         List<ParamFlowRuleEntity> rules = repository.findAllByMachine(MachineInfo.of(app, ip, port));
-        return sentinelApiClient.setParamFlowRuleOfMachine(app, ip, port, rules);
+        return sentinelApiClient.setParamFlowRuleOfMachine(app, ip, port, rules)
+            .thenRun(() -> {
+                if (rulePersistenceService != null) {
+                    rulePersistenceService.saveRules(app, "param_flow", repository.findAllByApp(app));
+                }
+                if (releaseMessageService != null) {
+                    releaseMessageService.insertNewRelease(app, "param_flow");
+                }
+            });
     }
 
     private <R> Result<R> unsupportedVersion() {

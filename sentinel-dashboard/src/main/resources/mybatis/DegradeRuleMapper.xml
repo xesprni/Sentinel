@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.alibaba.csp.sentinel.dashboard.repository.mapper.DegradeRuleMapper">
+
+    <resultMap id="BaseResultMap" type="com.alibaba.csp.sentinel.dashboard.datasource.entity.rule.DegradeRuleEntity">
+        <id column="id" property="id"/>
+        <result column="app" property="app"/>
+        <result column="ip" property="ip"/>
+        <result column="port" property="port"/>
+        <result column="resource" property="resource"/>
+        <result column="limit_app" property="limitApp"/>
+        <result column="count" property="count"/>
+        <result column="time_window" property="timeWindow"/>
+        <result column="grade" property="grade"/>
+        <result column="min_request_amount" property="minRequestAmount"/>
+        <result column="slow_ratio_threshold" property="slowRatioThreshold"/>
+        <result column="stat_interval_ms" property="statIntervalMs"/>
+        <result column="gmt_create" property="gmtCreate"/>
+        <result column="gmt_modified" property="gmtModified"/>
+    </resultMap>
+
+    <delete id="deleteByApp">
+        DELETE FROM sentinel_degrade_rule WHERE app = #{app}
+    </delete>
+
+    <insert id="insert" parameterType="com.alibaba.csp.sentinel.dashboard.datasource.entity.rule.DegradeRuleEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sentinel_degrade_rule (app, ip, port, resource, limit_app, count, time_window,
+            grade, min_request_amount, slow_ratio_threshold, stat_interval_ms)
+        VALUES (#{app}, #{ip}, #{port}, #{resource}, #{limitApp}, #{count}, #{timeWindow},
+            #{grade}, #{minRequestAmount}, #{slowRatioThreshold}, #{statIntervalMs})
+    </insert>
+
+    <select id="selectByApp" resultMap="BaseResultMap">
+        SELECT * FROM sentinel_degrade_rule WHERE app = #{app}
+    </select>
+
+</mapper>

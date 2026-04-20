@@ -52,6 +52,12 @@ public class SystemController {
     @Autowired
     private AppManagement appManagement;
 
+    @Autowired(required = false)
+    private com.alibaba.csp.sentinel.dashboard.service.ReleaseMessageService releaseMessageService;
+
+    @Autowired(required = false)
+    private com.alibaba.csp.sentinel.dashboard.service.RulePersistenceService rulePersistenceService;
+
     private <R> Result<R> checkBasicParams(String app, String ip, Integer port) {
         if (StringUtil.isEmpty(app)) {
             return Result.ofFail(-1, "app can't be null or empty");
@@ -251,6 +257,15 @@ public class SystemController {
 
     private boolean publishRules(String app, String ip, Integer port) {
         List<SystemRuleEntity> rules = repository.findAllByMachine(MachineInfo.of(app, ip, port));
-        return sentinelApiClient.setSystemRuleOfMachine(app, ip, port, rules);
+        boolean result = sentinelApiClient.setSystemRuleOfMachine(app, ip, port, rules);
+        if (result) {
+            if (rulePersistenceService != null) {
+                rulePersistenceService.saveRules(app, "system", repository.findAllByApp(app));
+            }
+            if (releaseMessageService != null) {
+                releaseMessageService.insertNewRelease(app, "system");
+            }
+        }
+        return result;
     }
 }

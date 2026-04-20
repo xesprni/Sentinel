@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.alibaba.csp.sentinel.dashboard.repository.mapper.ParamFlowRuleMapper">
+
+    <resultMap id="BaseResultMap" type="com.alibaba.csp.sentinel.dashboard.datasource.entity.rule.ParamFlowRuleEntity">
+        <id column="id" property="id"/>
+        <result column="app" property="app"/>
+        <result column="ip" property="ip"/>
+        <result column="port" property="port"/>
+        <result column="gmt_create" property="gmtCreate"/>
+        <result column="gmt_modified" property="gmtModified"/>
+        <association property="rule" javaType="com.alibaba.csp.sentinel.slots.block.flow.param.ParamFlowRule">
+            <result column="resource" property="resource"/>
+            <result column="limit_app" property="limitApp"/>
+            <result column="grade" property="grade"/>
+            <result column="param_idx" property="paramIdx"/>
+            <result column="count" property="count"/>
+            <result column="duration_in_sec" property="durationInSec"/>
+            <result column="control_behavior" property="controlBehavior"/>
+            <result column="max_queueing_time_ms" property="maxQueueingTimeMs"/>
+            <result column="burst_count" property="burstCount"/>
+            <result column="cluster_mode" property="clusterMode"/>
+            <result column="cluster_config" property="clusterConfig"
+                    typeHandler="com.alibaba.csp.sentinel.dashboard.config.FastjsonTypeHandler"/>
+            <result column="param_flow_items" property="paramFlowItemList"
+                    typeHandler="com.alibaba.csp.sentinel.dashboard.config.ParamFlowItemListTypeHandler"/>
+        </association>
+    </resultMap>
+
+    <delete id="deleteByApp">
+        DELETE FROM sentinel_param_flow_rule WHERE app = #{app}
+    </delete>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="e.id">
+        INSERT INTO sentinel_param_flow_rule (app, ip, port, resource, limit_app, grade, count,
+            duration_in_sec, param_idx, control_behavior, max_queueing_time_ms, burst_count,
+            cluster_mode, cluster_config, param_flow_items)
+        VALUES (#{e.app}, #{e.ip}, #{e.port}, #{e.rule.resource}, #{e.rule.limitApp}, #{e.rule.grade},
+            #{e.rule.count}, #{e.rule.durationInSec}, #{e.rule.paramIdx}, #{e.rule.controlBehavior},
+            #{e.rule.maxQueueingTimeMs}, #{e.rule.burstCount}, #{e.rule.clusterMode},
+            #{clusterConfigJson}, #{paramFlowItemsJson})
+    </insert>
+
+    <select id="selectByApp" resultMap="BaseResultMap">
+        SELECT * FROM sentinel_param_flow_rule WHERE app = #{app}
+    </select>
+
+</mapper>

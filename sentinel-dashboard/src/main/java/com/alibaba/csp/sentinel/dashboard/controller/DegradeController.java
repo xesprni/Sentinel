@@ -62,6 +62,12 @@ public class DegradeController {
     @Autowired
     private AppManagement appManagement;
 
+    @Autowired(required = false)
+    private com.alibaba.csp.sentinel.dashboard.service.ReleaseMessageService releaseMessageService;
+
+    @Autowired(required = false)
+    private com.alibaba.csp.sentinel.dashboard.service.RulePersistenceService rulePersistenceService;
+
     @GetMapping("/rules.json")
     @AuthAction(PrivilegeType.READ_RULE)
     public Result<List<DegradeRuleEntity>> apiQueryMachineRules(String app, String ip, Integer port) {
@@ -169,7 +175,16 @@ public class DegradeController {
 
     private boolean publishRules(String app, String ip, Integer port) {
         List<DegradeRuleEntity> rules = repository.findAllByMachine(MachineInfo.of(app, ip, port));
-        return sentinelApiClient.setDegradeRuleOfMachine(app, ip, port, rules);
+        boolean result = sentinelApiClient.setDegradeRuleOfMachine(app, ip, port, rules);
+        if (result) {
+            if (rulePersistenceService != null) {
+                rulePersistenceService.saveRules(app, "degrade", repository.findAllByApp(app));
+            }
+            if (releaseMessageService != null) {
+                releaseMessageService.insertNewRelease(app, "degrade");
+            }
+        }
+        return result;
     }
 
     private <R> Result<R> checkEntityInternal(DegradeRuleEntity entity) {

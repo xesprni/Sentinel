@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.alibaba.csp.sentinel.dashboard.repository.mapper.AuthorityRuleMapper">
+
+    <resultMap id="BaseResultMap" type="com.alibaba.csp.sentinel.dashboard.datasource.entity.rule.AuthorityRuleEntity">
+        <id column="id" property="id"/>
+        <result column="app" property="app"/>
+        <result column="ip" property="ip"/>
+        <result column="port" property="port"/>
+        <result column="gmt_create" property="gmtCreate"/>
+        <result column="gmt_modified" property="gmtModified"/>
+        <association property="rule" javaType="com.alibaba.csp.sentinel.slots.block.authority.AuthorityRule">
+            <result column="resource" property="resource"/>
+            <result column="limit_app" property="limitApp"/>
+            <result column="strategy" property="strategy"/>
+        </association>
+    </resultMap>
+
+    <delete id="deleteByApp">
+        DELETE FROM sentinel_authority_rule WHERE app = #{app}
+    </delete>
+
+    <insert id="insert" parameterType="com.alibaba.csp.sentinel.dashboard.datasource.entity.rule.AuthorityRuleEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sentinel_authority_rule (app, ip, port, resource, limit_app, strategy)
+        VALUES (#{app}, #{ip}, #{port}, #{rule.resource}, #{rule.limitApp}, #{rule.strategy})
+    </insert>
+
+    <select id="selectByApp" resultMap="BaseResultMap">
+        SELECT * FROM sentinel_authority_rule WHERE app = #{app}
+    </select>
+
+</mapper>

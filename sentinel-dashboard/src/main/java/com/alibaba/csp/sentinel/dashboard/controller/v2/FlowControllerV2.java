@@ -65,6 +65,12 @@ public class FlowControllerV2 {
     @Qualifier("flowRuleDefaultPublisher")
     private DynamicRulePublisher<List<FlowRuleEntity>> rulePublisher;
 
+    @Autowired(required = false)
+    private com.alibaba.csp.sentinel.dashboard.service.ReleaseMessageService releaseMessageService;
+
+    @Autowired(required = false)
+    private com.alibaba.csp.sentinel.dashboard.service.RulePersistenceService rulePersistenceService;
+
     @GetMapping("/rules")
     @AuthAction(PrivilegeType.READ_RULE)
     public Result<List<FlowRuleEntity>> apiQueryMachineRules(@RequestParam String app) {
@@ -222,5 +228,11 @@ public class FlowControllerV2 {
     private void publishRules(/*@NonNull*/ String app) throws Exception {
         List<FlowRuleEntity> rules = repository.findAllByApp(app);
         rulePublisher.publish(app, rules);
+        if (rulePersistenceService != null) {
+            rulePersistenceService.saveRules(app, "flow", rules);
+        }
+        if (releaseMessageService != null) {
+            releaseMessageService.insertNewRelease(app, "flow");
+        }
     }
 }

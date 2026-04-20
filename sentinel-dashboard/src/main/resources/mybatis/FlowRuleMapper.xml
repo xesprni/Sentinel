@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.alibaba.csp.sentinel.dashboard.repository.mapper.FlowRuleMapper">
+
+    <resultMap id="BaseResultMap" type="com.alibaba.csp.sentinel.dashboard.datasource.entity.rule.FlowRuleEntity">
+        <id column="id" property="id"/>
+        <result column="app" property="app"/>
+        <result column="ip" property="ip"/>
+        <result column="port" property="port"/>
+        <result column="limit_app" property="limitApp"/>
+        <result column="resource" property="resource"/>
+        <result column="grade" property="grade"/>
+        <result column="count" property="count"/>
+        <result column="strategy" property="strategy"/>
+        <result column="ref_resource" property="refResource"/>
+        <result column="control_behavior" property="controlBehavior"/>
+        <result column="warm_up_period_sec" property="warmUpPeriodSec"/>
+        <result column="max_queueing_time_ms" property="maxQueueingTimeMs"/>
+        <result column="cluster_mode" property="clusterMode"/>
+        <result column="cluster_config" property="clusterConfig"
+                typeHandler="com.alibaba.csp.sentinel.dashboard.config.FastjsonTypeHandler"/>
+        <result column="gmt_create" property="gmtCreate"/>
+        <result column="gmt_modified" property="gmtModified"/>
+    </resultMap>
+
+    <delete id="deleteByApp">
+        DELETE FROM sentinel_flow_rule WHERE app = #{app}
+    </delete>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="e.id">
+        INSERT INTO sentinel_flow_rule (app, ip, port, limit_app, resource, grade, count, strategy,
+            ref_resource, control_behavior, warm_up_period_sec, max_queueing_time_ms,
+            cluster_mode, cluster_config)
+        VALUES (#{e.app}, #{e.ip}, #{e.port}, #{e.limitApp}, #{e.resource}, #{e.grade}, #{e.count},
+            #{e.strategy}, #{e.refResource}, #{e.controlBehavior}, #{e.warmUpPeriodSec},
+            #{e.maxQueueingTimeMs}, #{e.clusterMode}, #{clusterConfigJson})
+    </insert>
+
+    <select id="selectByApp" resultMap="BaseResultMap">
+        SELECT * FROM sentinel_flow_rule WHERE app = #{app}
+    </select>
+
+</mapper>

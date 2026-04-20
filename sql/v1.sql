@@ -85,8 +85,12 @@ CREATE TABLE IF NOT EXISTS sentinel_param_flow_rule (
     grade TINYINT NOT NULL DEFAULT 1,
     count DOUBLE NOT NULL,
     duration_in_sec INT NOT NULL DEFAULT 1,
+    param_idx INT NOT NULL DEFAULT 0 COMMENT '参数索引',
+    control_behavior TINYINT NOT NULL DEFAULT 0 COMMENT '流控效果',
+    max_queueing_time_ms INT DEFAULT NULL COMMENT '最大排队等待时间(ms)',
+    burst_count INT DEFAULT 0 COMMENT '突发请求数',
     cluster_mode TINYINT(1) NOT NULL DEFAULT 0,
-    cluster_config TEXT DEFAULT NULL,
+    cluster_config TEXT DEFAULT NULL COMMENT '集群流控配置(JSON)',
     param_flow_items TEXT DEFAULT NULL COMMENT '热点参数例外项(JSON)',
     gmt_create DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     gmt_modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -113,3 +117,10 @@ CREATE TABLE IF NOT EXISTS sentinel_machine_info (
     INDEX idx_app (app),
     INDEX idx_status (status, is_deleted)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='应用机器信息';
+
+CREATE TABLE IF NOT EXISTS t_release_message (
+                                                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                                                 message VARCHAR(512) NOT NULL COMMENT 'app+ruleType',
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_message (message)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='规则版本变更消息';

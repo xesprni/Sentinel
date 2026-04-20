@@ -60,6 +60,12 @@ public class AuthorityRuleController {
     @Autowired
     private AppManagement appManagement;
 
+    @Autowired(required = false)
+    private com.alibaba.csp.sentinel.dashboard.service.ReleaseMessageService releaseMessageService;
+
+    @Autowired(required = false)
+    private com.alibaba.csp.sentinel.dashboard.service.RulePersistenceService rulePersistenceService;
+
     @GetMapping("/rules")
     @AuthAction(PrivilegeType.READ_RULE)
     public Result<List<AuthorityRuleEntity>> apiQueryAllRulesForMachine(@RequestParam String app,
@@ -192,6 +198,15 @@ public class AuthorityRuleController {
 
     private boolean publishRules(String app, String ip, Integer port) {
         List<AuthorityRuleEntity> rules = repository.findAllByMachine(MachineInfo.of(app, ip, port));
-        return sentinelApiClient.setAuthorityRuleOfMachine(app, ip, port, rules);
+        boolean result = sentinelApiClient.setAuthorityRuleOfMachine(app, ip, port, rules);
+        if (result) {
+            if (rulePersistenceService != null) {
+                rulePersistenceService.saveRules(app, "authority", repository.findAllByApp(app));
+            }
+            if (releaseMessageService != null) {
+                releaseMessageService.insertNewRelease(app, "authority");
+            }
+        }
+        return result;
     }
 }
