@@ -21,6 +21,7 @@ import java.util.List;
 import com.alibaba.csp.sentinel.dashboard.datasource.entity.rule.*;
 import com.alibaba.csp.sentinel.dashboard.repository.mapper.*;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.csp.sentinel.util.StringUtil;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +35,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class RulePersistenceServiceImpl implements RulePersistenceService {
 
     private static final Logger logger = LoggerFactory.getLogger(RulePersistenceServiceImpl.class);
+    static final String EMPTY_RULE_MACHINE_IP = "";
+    static final int EMPTY_RULE_MACHINE_PORT = 0;
 
     @Autowired
     private FlowRuleMapper flowRuleMapper;
@@ -99,6 +102,7 @@ public class RulePersistenceServiceImpl implements RulePersistenceService {
     private void saveFlowRules(String app, List<FlowRuleEntity> rules) {
         flowRuleMapper.deleteByApp(app);
         for (FlowRuleEntity e : rules) {
+            normalizeForPersistence(app, e);
             String clusterConfigJson = e.getClusterConfig() != null
                 ? JSON.toJSONString(e.getClusterConfig()) : null;
             flowRuleMapper.insert(e, clusterConfigJson);
@@ -108,6 +112,7 @@ public class RulePersistenceServiceImpl implements RulePersistenceService {
     private void saveDegradeRules(String app, List<DegradeRuleEntity> rules) {
         degradeRuleMapper.deleteByApp(app);
         for (DegradeRuleEntity e : rules) {
+            normalizeForPersistence(app, e);
             degradeRuleMapper.insert(e);
         }
     }
@@ -115,6 +120,7 @@ public class RulePersistenceServiceImpl implements RulePersistenceService {
     private void saveSystemRules(String app, List<SystemRuleEntity> rules) {
         systemRuleMapper.deleteByApp(app);
         for (SystemRuleEntity e : rules) {
+            normalizeForPersistence(app, e);
             systemRuleMapper.insert(e);
         }
     }
@@ -125,6 +131,7 @@ public class RulePersistenceServiceImpl implements RulePersistenceService {
             if (e.getRule() == null) {
                 continue;
             }
+            normalizeForPersistence(app, e);
             authorityRuleMapper.insert(e);
         }
     }
@@ -135,11 +142,54 @@ public class RulePersistenceServiceImpl implements RulePersistenceService {
             if (e.getRule() == null) {
                 continue;
             }
+            normalizeForPersistence(app, e);
             String clusterConfigJson = e.getClusterConfig() != null
                 ? JSON.toJSONString(e.getClusterConfig()) : null;
             String paramFlowItemsJson = e.getParamFlowItemList() != null
                 ? JSON.toJSONString(e.getParamFlowItemList()) : null;
             paramFlowRuleMapper.insert(e, clusterConfigJson, paramFlowItemsJson);
         }
+    }
+
+    static void normalizeForPersistence(String app, FlowRuleEntity entity) {
+        entity.setApp(resolveRuleApp(app, entity.getApp()));
+        entity.setIp(resolveRuleIp(entity.getIp()));
+        entity.setPort(resolveRulePort(entity.getPort()));
+    }
+
+    static void normalizeForPersistence(String app, DegradeRuleEntity entity) {
+        entity.setApp(resolveRuleApp(app, entity.getApp()));
+        entity.setIp(resolveRuleIp(entity.getIp()));
+        entity.setPort(resolveRulePort(entity.getPort()));
+    }
+
+    static void normalizeForPersistence(String app, SystemRuleEntity entity) {
+        entity.setApp(resolveRuleApp(app, entity.getApp()));
+        entity.setIp(resolveRuleIp(entity.getIp()));
+        entity.setPort(resolveRulePort(entity.getPort()));
+    }
+
+    static void normalizeForPersistence(String app, AuthorityRuleEntity entity) {
+        entity.setApp(resolveRuleApp(app, entity.getApp()));
+        entity.setIp(resolveRuleIp(entity.getIp()));
+        entity.setPort(resolveRulePort(entity.getPort()));
+    }
+
+    static void normalizeForPersistence(String app, ParamFlowRuleEntity entity) {
+        entity.setApp(resolveRuleApp(app, entity.getApp()));
+        entity.setIp(resolveRuleIp(entity.getIp()));
+        entity.setPort(resolveRulePort(entity.getPort()));
+    }
+
+    private static String resolveRuleApp(String app, String entityApp) {
+        return StringUtil.isBlank(entityApp) ? app : entityApp;
+    }
+
+    private static String resolveRuleIp(String ip) {
+        return ip == null ? EMPTY_RULE_MACHINE_IP : ip;
+    }
+
+    private static int resolveRulePort(Integer port) {
+        return port == null ? EMPTY_RULE_MACHINE_PORT : port;
     }
 }

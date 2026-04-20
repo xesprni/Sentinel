@@ -15,6 +15,14 @@
  */
 package com.alibaba.csp.sentinel.datasource.mysql;
 
+import java.util.Collections;
+import java.util.List;
+
+import com.alibaba.csp.sentinel.slots.block.authority.AuthorityRule;
+import com.alibaba.csp.sentinel.slots.block.flow.FlowRule;
+import com.alibaba.csp.sentinel.slots.block.flow.param.ParamFlowRule;
+import com.alibaba.csp.sentinel.transport.endpoint.Endpoint;
+import com.alibaba.csp.sentinel.transport.endpoint.Protocol;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -62,5 +70,66 @@ public class MysqlDataSourceTest {
     @Test(expected = IllegalArgumentException.class)
     public void testRuleFetchConfigNullExecutor() {
         new RuleFetchConfig(null);
+    }
+
+    @Test
+    public void testRuleJsonConverterForFlowRules() {
+        List<FlowRule> rules = RuleJsonConverter.convert(
+            "[{\"app\":\"demo\",\"resource\":\"/foo\",\"grade\":1,\"count\":3.0}]",
+            FlowRule.class);
+
+        assertEquals(1, rules.size());
+        assertEquals("/foo", rules.get(0).getResource());
+        assertEquals(3.0, rules.get(0).getCount(), 0.0);
+    }
+
+    @Test
+    public void testRuleJsonConverterForNestedAuthorityRules() {
+        List<AuthorityRule> rules = RuleJsonConverter.convert(
+            "[{\"app\":\"demo\",\"rule\":{\"resource\":\"/bar\",\"limitApp\":\"callerA\",\"strategy\":0}}]",
+            AuthorityRule.class);
+
+        assertEquals(1, rules.size());
+        assertEquals("/bar", rules.get(0).getResource());
+        assertEquals("callerA", rules.get(0).getLimitApp());
+    }
+
+    @Test
+    public void testRuleJsonConverterForNestedParamFlowRules() {
+        List<ParamFlowRule> rules = RuleJsonConverter.convert(
+            "[{\"app\":\"demo\",\"rule\":{\"resource\":\"/hot\",\"grade\":1,\"count\":4.0,\"paramIdx\":0}}]",
+            ParamFlowRule.class);
+
+        assertEquals(1, rules.size());
+        assertEquals("/hot", rules.get(0).getResource());
+        assertEquals(Integer.valueOf(0), rules.get(0).getParamIdx());
+        assertEquals(4.0, rules.get(0).getCount(), 0.0);
+    }
+
+    @Test
+    public void testRuleJsonConverterBlankSource() {
+        assertTrue(RuleJsonConverter.convert("", FlowRule.class).isEmpty());
+    }
+
+    @Test
+    public void testMysqlDataSourceInitFuncEnabledByDefault() {
+        assertTrue(MysqlDataSourceInitFunc.isAutoFetchEnabled(null));
+        assertTrue(MysqlDataSourceInitFunc.isAutoFetchEnabled(""));
+        assertTrue(MysqlDataSourceInitFunc.isAutoFetchEnabled("true"));
+    }
+
+    @Test
+    public void testMysqlDataSourceInitFuncDisabledByProperty() {
+        assertFalse(MysqlDataSourceInitFunc.isAutoFetchEnabled("false"));
+        assertFalse(MysqlDataSourceInitFunc.isAutoFetchEnabled("0"));
+    }
+
+    @Test
+    public void testMysqlDataSourceInitFuncShouldAutoInit() {
+        List<Endpoint> endpoints = Collections.singletonList(new Endpoint(Protocol.HTTP, "127.0.0.1", 8080));
+        assertTrue(MysqlDataSourceInitFunc.shouldAutoInit(null, "demo-app", endpoints));
+        assertFalse(MysqlDataSourceInitFunc.shouldAutoInit("false", "demo-app", endpoints));
+        assertFalse(MysqlDataSourceInitFunc.shouldAutoInit(null, "", endpoints));
+        assertFalse(MysqlDataSourceInitFunc.shouldAutoInit(null, "demo-app", Collections.emptyList()));
     }
 }

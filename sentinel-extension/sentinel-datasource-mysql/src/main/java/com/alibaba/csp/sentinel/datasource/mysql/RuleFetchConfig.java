@@ -74,6 +74,7 @@ public class RuleFetchConfig {
 
     private ScheduledExecutorService fullSyncScheduler;
     private ExecutorService longPollingExecutor;
+    private volatile boolean initialized = false;
 
     public RuleFetchConfig(RuleFetchExecutor executor) {
         if (executor == null) {
@@ -85,11 +86,18 @@ public class RuleFetchConfig {
     /**
      * Initialize and start the rule fetching threads.
      */
-    public void init() {
+    public synchronized void init() {
+        if (initialized) {
+            return;
+        }
         RecordLog.info("[RuleFetchConfig] Initializing rule fetch via long polling");
 
         // First full sync
         executor.sync();
+        if (!executor.isRuleApiAvailable()) {
+            RecordLog.info("[RuleFetchConfig] Dashboard rule API unavailable, skip background rule fetch tasks");
+            return;
+        }
 
         // Configure long polling timeout
         configureLongPollingTimeout();
@@ -112,6 +120,7 @@ public class RuleFetchConfig {
             new NamedThreadFactory("sentinel-rule-long-polling", true));
         longPollingExecutor.execute(() -> executor.longPollingFetch());
 
+        initialized = true;
         RecordLog.info("[RuleFetchConfig] Rule fetch initialized. Full sync interval: {}s, long polling timeout: {}ms",
             syncIntervalSeconds, RuleFetchExecutor.DEFAULT_TIMEOUT_MS);
     }
@@ -119,7 +128,7 @@ public class RuleFetchConfig {
     /**
      * Shutdown all fetching threads.
      */
-    public void shutdown() {
+    public synchronized void shutdown() {
         if (fullSyncScheduler != null) {
             fullSyncScheduler.shutdownNow();
             fullSyncScheduler = null;
@@ -128,7 +137,12 @@ public class RuleFetchConfig {
             longPollingExecutor.shutdownNow();
             longPollingExecutor = null;
         }
+        initialized = false;
         RecordLog.info("[RuleFetchConfig] Rule fetch shutdown");
+    }
+
+    boolean isInitialized() {
+        return initialized;
     }
 
     private void configureLongPollingTimeout() {

@@ -88,6 +88,7 @@ public class RuleFetchExecutor {
 
     private volatile boolean syncAllCompleted = false;
     private volatile String dashboardAddress;
+    private volatile boolean ruleApiAvailable = true;
 
     public RuleFetchExecutor() {
     }
@@ -106,17 +107,23 @@ public class RuleFetchExecutor {
      * Full sync: fetch all registered rule types from Dashboard.
      */
     void sync() {
+        if (!ruleApiAvailable) {
+            return;
+        }
         lock.lock();
         try {
             RecordLog.info("[RuleFetchExecutor] Start syncing all rule data");
             for (Map.Entry<String, AbstractDataSource<String, ?>> entry : ruleDataSources.entrySet()) {
+                if (!ruleApiAvailable) {
+                    break;
+                }
                 try {
                     fetchRuleData(entry.getKey());
                 } catch (Exception e) {
                     RecordLog.warn("[RuleFetchExecutor] Failed to fetch rule data for type: " + entry.getKey(), e);
                 }
             }
-            syncAllCompleted = true;
+            syncAllCompleted = ruleApiAvailable;
         } finally {
             lock.unlock();
         }
@@ -127,7 +134,7 @@ public class RuleFetchExecutor {
      */
     void longPollingFetch() {
         RecordLog.info("[RuleFetchExecutor] Long polling fetch task started");
-        while (true) {
+        while (ruleApiAvailable) {
             try {
                 checkVersion();
             } catch (InterruptedException e) {
@@ -145,6 +152,9 @@ public class RuleFetchExecutor {
      * Dashboard holds the request until a change is detected or timeout.
      */
     private void checkVersion() throws InterruptedException {
+        if (!ruleApiAvailable) {
+            return;
+        }
         if (!syncAllCompleted) {
             Thread.sleep(100);
             return;
@@ -164,12 +174,19 @@ public class RuleFetchExecutor {
         request.put("ruleInfos", ruleInfos);
         request.put("timeOut", DEFAULT_TIMEOUT_MS);
 
-        String response = null;
+        HttpResult httpResult = null;
         try {
-            response = doPost(RULE_WATCH_VERSION_PATH, request.toJSONString(), (int) (DEFAULT_TIMEOUT_MS + CONNECT_TIMEOUT_MS));
+            httpResult = doPost(RULE_WATCH_VERSION_PATH, request.toJSONString(),
+                (int) (DEFAULT_TIMEOUT_MS + CONNECT_TIMEOUT_MS));
         } catch (Exception ignore) {
         }
 
+        if (httpResult != null && httpResult.getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
+            markRuleApiUnavailable(RULE_WATCH_VERSION_PATH);
+            return;
+        }
+
+        String response = httpResult == null ? null : httpResult.getBody();
         if (StringUtil.isNotBlank(response)) {
             try {
                 JSONObject result = JSON.parseObject(response);
@@ -203,6 +220,9 @@ public class RuleFetchExecutor {
      * Fetch rule data for a specific rule type via Dashboard REST API.
      */
     private void fetchRuleData(String ruleType) throws Exception {
+        if (!ruleApiAvailable) {
+            return;
+        }
         AbstractDataSource<String, ?> dataSource = ruleDataSources.get(ruleType);
         if (dataSource == null) {
             return;
@@ -215,7 +235,13 @@ public class RuleFetchExecutor {
         request.put("startId", 0L);
         request.put("pageSize", 1000);
 
-        String response = doPost(RULE_LIST_PATH, request.toJSONString(), READ_TIMEOUT_MS);
+        HttpResult httpResult = doPost(RULE_LIST_PATH, request.toJSONString(), READ_TIMEOUT_MS);
+        if (httpResult.getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
+            markRuleApiUnavailable(RULE_LIST_PATH);
+            return;
+        }
+
+        String response = httpResult.getBody();
 
         if (StringUtil.isBlank(response)) {
             RecordLog.warn("[RuleFetchExecutor] Empty response for rule type: {}", ruleType);
@@ -253,7 +279,7 @@ public class RuleFetchExecutor {
     /**
      * Execute HTTP POST to Dashboard.
      */
-    private String doPost(String path, String body, int timeoutMs) throws Exception {
+    private HttpResult doPost(String path, String body, int timeoutMs) throws Exception {
         String address = getDashboardAddress();
         if (address == null) {
             throw new IllegalStateException("Dashboard address not configured");
@@ -285,14 +311,14 @@ public class RuleFetchExecutor {
                     while ((line = reader.readLine()) != null) {
                         sb.append(line);
                     }
-                    return sb.toString();
+                    return new HttpResult(responseCode, sb.toString());
                 }
             } else if (responseCode == 304) {
                 // Not modified
-                return null;
+                return new HttpResult(responseCode, null);
             } else {
                 RecordLog.warn("[RuleFetchExecutor] HTTP POST {} returned status {}", urlStr, responseCode);
-                return null;
+                return new HttpResult(responseCode, null);
             }
         } finally {
             if (conn != null) {
@@ -320,9 +346,42 @@ public class RuleFetchExecutor {
         return dashboardAddress;
     }
 
+    boolean isRuleApiAvailable() {
+        return ruleApiAvailable;
+    }
+
+    private void markRuleApiUnavailable(String path) {
+        if (!ruleApiAvailable) {
+            return;
+        }
+        ruleApiAvailable = false;
+        syncAllCompleted = false;
+        RecordLog.info("[RuleFetchExecutor] Dashboard endpoint {} is unavailable, disable MySQL rule fetch. "
+            + "Ensure dashboard is started with sentinel.mysql.enabled=true", path);
+    }
+
     @SuppressWarnings("unchecked")
     private <S, T> void updateDataSource(AbstractDataSource<S, T> ds, S source) throws Exception {
         T parsed = ds.loadConfig(source);
         ds.getProperty().updateValue(parsed);
+    }
+
+    private static final class HttpResult {
+
+        private final int statusCode;
+        private final String body;
+
+        private HttpResult(int statusCode, String body) {
+            this.statusCode = statusCode;
+            this.body = body;
+        }
+
+        private int getStatusCode() {
+            return statusCode;
+        }
+
+        private String getBody() {
+            return body;
+        }
     }
 }
