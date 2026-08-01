@@ -87,11 +87,16 @@ public class FlowControllerV2 {
                         entity.setId(entity.getClusterConfig().getFlowId());
                     }
                 }
+                rules = repository.saveAll(rules);
+            } else if (rulePersistenceService != null) {
+                rules = repository.findAllByApp(app);
             }
-            rules = repository.saveAll(rules);
             return Result.ofSuccess(rules);
         } catch (Throwable throwable) {
             logger.error("Error when querying flow rules", throwable);
+            if (rulePersistenceService != null) {
+                return Result.ofSuccess(repository.findAllByApp(app));
+            }
             return Result.ofThrowable(-1, throwable);
         }
     }

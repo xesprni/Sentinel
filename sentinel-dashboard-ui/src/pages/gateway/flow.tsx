@@ -11,6 +11,7 @@ import { useMachines } from "@/hooks/use-machines";
 import * as gatewayFlowApi from "@/api/gateway-flow";
 import { toast } from "sonner";
 import type { GatewayFlowRule } from "@/types/gateway";
+import { parseMachineKey } from "@/lib/machine";
 
 export default function GatewayFlowPage() {
   const { app = "" } = useParams();
@@ -21,9 +22,7 @@ export default function GatewayFlowPage() {
   const [editRule, setEditRule] = useState<GatewayFlowRule | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<GatewayFlowRule | null>(null);
 
-  const mp = selectedMachine.split(":");
-  const ip = mp[0] || undefined;
-  const port = mp[1] ? Number(mp[1]) : undefined;
+  const { ip, port } = parseMachineKey(selectedMachine);
 
   const { data: rules = [] } = useQuery({
     queryKey: ["gateway-flow", app, ip, port],
@@ -45,17 +44,17 @@ export default function GatewayFlowPage() {
   });
 
   const handleSubmit = useCallback((rule: GatewayFlowRule) => {
-    const payload = { ...rule, app };
+    const payload = { ...rule, app, ip, port };
     if (rule.id) updateMut.mutate(payload);
     else addMut.mutate(payload);
-  }, [app, addMut, updateMut]);
+  }, [app, ip, port, addMut, updateMut]);
 
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">网关流控规则 — {app}</h1>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <MachineSelector machines={machines || []} value={selectedMachine} onValueChange={setSelectedMachine} />
-        <Button size="sm" onClick={() => { setEditRule(null); setDialogOpen(true); }}>新增规则</Button>
+        <Button size="sm" disabled={!ip || !port} onClick={() => { setEditRule(null); setDialogOpen(true); }}>新增规则</Button>
       </div>
       <Table>
         <TableHeader>
@@ -74,7 +73,7 @@ export default function GatewayFlowPage() {
               <TableCell>{r.resource}</TableCell>
               <TableCell><Badge variant="outline">{r.resourceMode === 0 ? "Route ID" : "API 分组"}</Badge></TableCell>
               <TableCell>{r.count}</TableCell>
-              <TableCell>{r.intervalSec ?? "-"}</TableCell>
+              <TableCell>{r.interval ?? r.intervalSec ?? "-"} {(["秒", "分", "时", "天"])[r.intervalUnit ?? 0]}</TableCell>
               <TableCell>{r.controlBehavior === 2 ? "排队等待" : "快速失败"}</TableCell>
               <TableCell className="space-x-1">
                 <Button variant="ghost" size="sm" onClick={() => { setEditRule(r); setDialogOpen(true); }}>编辑</Button>

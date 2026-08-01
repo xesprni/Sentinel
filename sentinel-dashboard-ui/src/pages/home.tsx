@@ -6,8 +6,10 @@ import { EmptyState } from "@/components/shared/empty-state";
 import {
   ShieldOff, FlaskConical, Cpu, UserCheck, Flame,
   BarChart3, GitFork, Server,
+  Route, Webhook,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useApps } from "@/hooks/use-apps";
 
 interface MenuCard {
   label: string;
@@ -17,7 +19,7 @@ interface MenuCard {
   color: string;
 }
 
-const menuCards: MenuCard[] = [
+const normalMenuCards: MenuCard[] = [
   { label: "流控规则", path: "/dashboard/flow", desc: "配置流量控制规则", icon: ShieldOff, color: "text-blue-500" },
   { label: "流控规则 (推送)", path: "/dashboard/v2/flow", desc: "配置流控规则 (动态推送)", icon: ShieldOff, color: "text-blue-400" },
   { label: "熔断规则", path: "/dashboard/degrade", desc: "配置熔断降级规则", icon: FlaskConical, color: "text-orange-500" },
@@ -29,8 +31,18 @@ const menuCards: MenuCard[] = [
   { label: "机器列表", path: "/dashboard/app", desc: "查看和管理机器", icon: Server, color: "text-gray-500" },
 ];
 
+const gatewayMenuCards: MenuCard[] = [
+  { label: "网关请求链路", path: "/dashboard/gateway/identity", desc: "查看网关 Route 与 API 调用链路", icon: Webhook, color: "text-blue-500" },
+  { label: "API 管理", path: "/dashboard/gateway/api", desc: "配置自定义 API 分组", icon: Route, color: "text-emerald-500" },
+  { label: "网关流控规则", path: "/dashboard/gateway/flow", desc: "配置 Route 与 API 流控", icon: ShieldOff, color: "text-orange-500" },
+  { label: "实时监控", path: "/dashboard/metric", desc: "查看实时监控数据", icon: BarChart3, color: "text-cyan-500" },
+  { label: "系统规则", path: "/dashboard/system", desc: "配置系统保护规则", icon: Cpu, color: "text-slate-500" },
+  { label: "熔断规则", path: "/dashboard/degrade", desc: "配置熔断降级规则", icon: FlaskConical, color: "text-red-500" },
+];
+
 export default function HomePage() {
   const { app } = useParams<{ app: string }>();
+  const { data: apps } = useApps();
 
   if (!app) {
     return (
@@ -39,6 +51,9 @@ export default function HomePage() {
       </div>
     );
   }
+
+  const isGateway = apps?.find((item) => item.app === app)?.appType === 1;
+  const menuCards = isGateway ? gatewayMenuCards : normalMenuCards;
 
   return (
     <div className="space-y-6">

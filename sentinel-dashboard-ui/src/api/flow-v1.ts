@@ -11,7 +11,18 @@ export function addFlowRule(rule: FlowRule): Promise<Result<null>> {
 }
 
 export function updateFlowRule(rule: FlowRule): Promise<Result<null>> {
-  return putWithParams("v1/flow/save.json", rule as unknown as Record<string, string | number | boolean>);
+  const params: Record<string, string | number | boolean> = {};
+  const keys: (keyof FlowRule)[] = [
+    "id", "app", "limitApp", "resource", "grade", "count", "strategy",
+    "refResource", "controlBehavior", "warmUpPeriodSec", "maxQueueingTimeMs",
+  ];
+  for (const key of keys) {
+    const value = rule[key];
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      params[key] = value;
+    }
+  }
+  return putWithParams("v1/flow/save.json", params);
 }
 
 export function deleteFlowRule(id: number): Promise<Result<null>> {

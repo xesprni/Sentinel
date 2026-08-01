@@ -2,8 +2,8 @@ import { get, post, put, del } from "./client";
 import type { Result } from "./types";
 import type { FlowRule } from "@/types/rule";
 
-export function getFlowRules(app: string): Promise<Result<FlowRule[]>> {
-  return get("v2/flow/rules", { app });
+export function getFlowRules(app: string, ip: string, port: number): Promise<Result<FlowRule[]>> {
+  return get("v2/flow/rules", { app, ip, port });
 }
 
 export function addFlowRule(rule: FlowRule): Promise<Result<FlowRule>> {

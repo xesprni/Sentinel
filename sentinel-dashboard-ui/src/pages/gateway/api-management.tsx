@@ -10,8 +10,9 @@ import { useMachines } from "@/hooks/use-machines";
 import * as gatewayApiApi from "@/api/gateway-api";
 import { toast } from "sonner";
 import type { GatewayApiDefinition } from "@/types/gateway";
+import { parseMachineKey } from "@/lib/machine";
 
-const matchStrategyMap: Record<number, string> = { 0: "URL", 1: "精确", 2: "正则", 3: "前缀" };
+const matchStrategyMap: Record<number, string> = { 0: "精确", 1: "前缀", 2: "正则" };
 
 export default function GatewayApiPage() {
   const { app = "" } = useParams();
@@ -22,9 +23,7 @@ export default function GatewayApiPage() {
   const [editRule, setEditRule] = useState<GatewayApiDefinition | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<GatewayApiDefinition | null>(null);
 
-  const mp = selectedMachine.split(":");
-  const ip = mp[0] || undefined;
-  const port = mp[1] ? Number(mp[1]) : undefined;
+  const { ip, port } = parseMachineKey(selectedMachine);
 
   const { data: apis = [] } = useQuery({
     queryKey: ["gateway-api", app, ip, port],
@@ -46,17 +45,17 @@ export default function GatewayApiPage() {
   });
 
   const handleSubmit = useCallback((rule: GatewayApiDefinition) => {
-    const payload = { ...rule, app };
+    const payload = { ...rule, app, ip, port };
     if (rule.id) updateMut.mutate(payload);
     else addMut.mutate(payload);
-  }, [app, addMut, updateMut]);
+  }, [app, ip, port, addMut, updateMut]);
 
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">API 管理 — {app}</h1>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <MachineSelector machines={machines || []} value={selectedMachine} onValueChange={setSelectedMachine} />
-        <Button size="sm" onClick={() => { setEditRule(null); setDialogOpen(true); }}>新增 API</Button>
+        <Button size="sm" disabled={!ip || !port} onClick={() => { setEditRule(null); setDialogOpen(true); }}>新增 API</Button>
       </div>
       <Table>
         <TableHeader>
@@ -87,7 +86,7 @@ export default function GatewayApiPage() {
           {apis.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">暂无数据</TableCell></TableRow>}
         </TableBody>
       </Table>
-      <GatewayApiDialog open={dialogOpen} onOpenChange={setDialogOpen} rule={editRule} onSubmit={handleSubmit} />
+      <GatewayApiDialog key={editRule?.id ?? "new"} open={dialogOpen} onOpenChange={setDialogOpen} rule={editRule} onSubmit={handleSubmit} />
       <ConfirmDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)} title="确认删除" description={`确定要删除 API「${deleteTarget?.apiName}」吗？`} onConfirm={() => { if (deleteTarget?.id) deleteMut.mutate(deleteTarget.id); setDeleteTarget(null); }} />
     </div>
   );

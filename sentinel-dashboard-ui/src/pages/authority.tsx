@@ -14,6 +14,7 @@ import { Pencil, Trash2, Plus, RefreshCw } from "lucide-react";
 import * as authorityApi from "@/api/authority";
 import { toast } from "sonner";
 import type { AuthorityRule } from "@/types/rule";
+import { parseMachineKey } from "@/lib/machine";
 
 export default function AuthorityPage() {
   const { app = "" } = useParams();
@@ -25,9 +26,7 @@ export default function AuthorityPage() {
   const [editRule, setEditRule] = useState<AuthorityRule | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AuthorityRule | null>(null);
 
-  const mp = selectedMachine.split(":");
-  const ip = mp[0] || undefined;
-  const port = mp[1] ? Number(mp[1]) : undefined;
+  const { ip, port } = parseMachineKey(selectedMachine);
 
   const { data: rules = [], isLoading } = useQuery({
     queryKey: ["authority", app, ip, port],
@@ -49,10 +48,10 @@ export default function AuthorityPage() {
   });
 
   const handleSubmit = useCallback((rule: AuthorityRule) => {
-    const payload = { ...rule, app };
+    const payload = { ...rule, app, ip, port };
     if (rule.id) updateMut.mutate({ id: rule.id, rule: payload });
     else addMut.mutate(payload);
-  }, [app, addMut, updateMut]);
+  }, [app, ip, port, addMut, updateMut]);
 
   const filtered = rules.filter((r) => r.resource.toLowerCase().includes(search.toLowerCase()));
 
@@ -62,10 +61,10 @@ export default function AuthorityPage() {
         <h1 className="text-xl font-semibold">授权规则</h1>
         <Badge variant="secondary">{filtered.length} 条规则</Badge>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <MachineSelector machines={machines || []} value={selectedMachine} onValueChange={setSelectedMachine} />
         <SearchInput value={search} onChange={setSearch} />
-        <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => qc.invalidateQueries({ queryKey: ["authority"] })}><RefreshCw className="h-4 w-4" /></Button>
+        <Button variant="outline" size="icon" className="h-9 w-9" aria-label="刷新授权规则" onClick={() => qc.invalidateQueries({ queryKey: ["authority"] })}><RefreshCw className="h-4 w-4" /></Button>
         <Button size="sm" disabled={!selectedMachine} onClick={() => { setEditRule(null); setDialogOpen(true); }}><Plus className="h-4 w-4 mr-1" />新增</Button>
       </div>
 
@@ -91,8 +90,8 @@ export default function AuthorityPage() {
                 <TableCell><Badge variant="outline">{r.strategy === 0 ? "白名单" : "黑名单"}</Badge></TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditRule(r); setDialogOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteTarget(r)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={`编辑 ${r.resource}`} onClick={() => { setEditRule(r); setDialogOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" aria-label={`删除 ${r.resource}`} onClick={() => setDeleteTarget(r)}><Trash2 className="h-3.5 w-3.5" /></Button>
                   </div>
                 </TableCell>
               </TableRow>

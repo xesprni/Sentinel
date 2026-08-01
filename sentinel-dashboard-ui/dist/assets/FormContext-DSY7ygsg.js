@@ -1,0 +1,1 @@
+import{G as e,V as t,ot as n,rt as r}from"./button-GmibnSNB.js";var i=e(`check`,[[`path`,{d:`M20 6 9 17l-5-5`,key:`1gmf2c`}]]),a=n(r()),o=a.createContext({formRef:{current:{fields:new Map}},errors:{},clearErrors:t,validationMode:`onSubmit`,submitAttemptedRef:{current:!1}});function s(){return a.useContext(o)}export{i as n,s as t};

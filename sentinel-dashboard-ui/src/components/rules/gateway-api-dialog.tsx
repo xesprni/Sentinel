@@ -25,7 +25,7 @@ interface GatewayApiDialogProps {
   onSubmit: (data: GatewayApiDefinition) => void;
 }
 
-const matchLabels: Record<string, string> = { "0": "URL", "1": "精确", "2": "正则", "3": "前缀" };
+const matchLabels: Record<string, string> = { "0": "精确", "1": "前缀", "2": "正则" };
 
 export function GatewayApiDialog({ open, onOpenChange, rule, onSubmit }: GatewayApiDialogProps) {
   const [apiName, setApiName] = useState(rule?.apiName || "");
@@ -57,7 +57,7 @@ export function GatewayApiDialog({ open, onOpenChange, rule, onSubmit }: Gateway
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>API 名称</Label>
-            <Input value={apiName} onChange={(e) => setApiName(e.target.value)} />
+            <Input value={apiName} disabled={!!rule?.id} onChange={(e) => setApiName(e.target.value)} />
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -81,13 +81,12 @@ export function GatewayApiDialog({ open, onOpenChange, rule, onSubmit }: Gateway
                 >
                   <SelectTrigger className="w-32"><SelectValue>{(v: string | null) => matchLabels[v ?? ""] ?? v}</SelectValue></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="0">URL</SelectItem>
-                    <SelectItem value="1">精确</SelectItem>
+                    <SelectItem value="0">精确</SelectItem>
+                    <SelectItem value="1">前缀</SelectItem>
                     <SelectItem value="2">正则</SelectItem>
-                    <SelectItem value="3">前缀</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button variant="ghost" size="sm" onClick={() => setItems(items.filter((_, i) => i !== idx))}>
+                <Button variant="ghost" size="sm" disabled={items.length === 1} onClick={() => setItems(items.filter((_, i) => i !== idx))}>
                   删除
                 </Button>
               </div>
@@ -95,7 +94,7 @@ export function GatewayApiDialog({ open, onOpenChange, rule, onSubmit }: Gateway
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
-            <Button onClick={handleSubmit}>确认</Button>
+            <Button onClick={handleSubmit} disabled={!apiName.trim() || items.some((item) => !item.pattern.trim())}>确认</Button>
           </DialogFooter>
         </div>
       </DialogContent>

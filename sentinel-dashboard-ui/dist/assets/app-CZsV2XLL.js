@@ -1,0 +1,1 @@
+import{i as e,n as t}from"./client-9oXTMhH8.js";function n(){return t(`app/briefinfos.json`)}function r(e){return t(`app/${e}/machines.json`)}function i(t,n,r){return e(`app/${t}/machine/remove.json`,{ip:n,port:r})}export{r as n,i as r,n as t};

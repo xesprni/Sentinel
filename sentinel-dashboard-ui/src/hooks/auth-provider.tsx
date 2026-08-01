@@ -1,18 +1,9 @@
-import { useCallback, useState, createContext, useContext } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { checkAuth, login, logout } from "@/api/auth";
 import type { LoginParams } from "@/api/auth";
+import { AuthContext } from "./auth-context";
 
-interface AuthState {
-  isAuthenticated: boolean;
-  loading: boolean;
-  check: () => Promise<boolean>;
-  signIn: (params: LoginParams) => Promise<{ success: boolean; msg?: string }>;
-  signOut: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthState | null>(null);
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -34,10 +25,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       const res = await login(params);
-      if (res.success) {
-        setIsAuthenticated(true);
-      }
+      if (res.success) setIsAuthenticated(true);
       return res;
+    } catch {
+      setIsAuthenticated(false);
+      return { success: false, msg: "无法连接到 Dashboard，请检查服务地址和登录信息" };
     } finally {
       setLoading(false);
     }
@@ -52,15 +44,5 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  return (
-    <AuthContext.Provider value={{ isAuthenticated, loading, check, signIn, signOut }}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
-  return ctx;
+  return <AuthContext.Provider value={{ isAuthenticated, loading, check, signIn, signOut }}>{children}</AuthContext.Provider>;
 }

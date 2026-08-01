@@ -1,6 +1,8 @@
 export interface FlowRule {
   id?: number;
   app?: string;
+  ip?: string;
+  port?: number;
   resource: string;
   limitApp: string;
   grade: number; // 1=QPS, 0=thread
@@ -22,6 +24,8 @@ export interface FlowRule {
 export interface DegradeRule {
   id?: number;
   app?: string;
+  ip?: string;
+  port?: number;
   resource: string;
   limitApp: string;
   grade: number; // 0=slowRT, 1=exceptionRatio, 2=exceptionCount
@@ -35,6 +39,8 @@ export interface DegradeRule {
 export interface SystemRule {
   id?: number;
   app?: string;
+  ip?: string;
+  port?: number;
   highestSystemLoad?: number;
   highestCpuUsage?: number;
   avgRt?: number;
@@ -45,6 +51,8 @@ export interface SystemRule {
 export interface AuthorityRule {
   id?: number;
   app?: string;
+  ip?: string;
+  port?: number;
   resource: string;
   limitApp: string;
   strategy: number; // 0=whitelist, 1=blacklist
@@ -53,12 +61,17 @@ export interface AuthorityRule {
 export interface ParamFlowRule {
   id?: number;
   app?: string;
+  ip?: string;
+  port?: number;
   resource: string;
   limitApp?: string;
   grade: number; // 1=QPS
   paramIdx: number;
   count: number;
   durationInSec: number;
+  controlBehavior?: number;
+  maxQueueingTimeMs?: number;
+  burstCount?: number;
   clusterMode: boolean;
   clusterConfig?: {
     flowId?: number;

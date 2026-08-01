@@ -7,6 +7,8 @@ import {
 } from "@/components/ui/select";
 import { Monitor } from "lucide-react";
 import type { MachineInfo } from "@/types/app";
+import { formatMachineKey } from "@/lib/machine";
+import { useEffect } from "react";
 
 interface MachineSelectorProps {
   machines: MachineInfo[];
@@ -18,8 +20,15 @@ export function MachineSelector({ machines, value, onValueChange }: MachineSelec
   // Build a label map so SelectValue can display machine names instead of raw "ip:port"
   const labelMap: Record<string, string> = {};
   for (const m of machines) {
-    labelMap[`${m.ip}:${m.port}`] = `${m.hostname || m.ip}:${m.port}`;
+    labelMap[formatMachineKey(m.ip, m.port)] = `${m.hostname || m.ip}:${m.port}`;
   }
+
+  useEffect(() => {
+    if (!value && machines.length > 0) {
+      const preferred = machines.find((machine) => machine.healthy) || machines[0];
+      onValueChange(formatMachineKey(preferred.ip, preferred.port));
+    }
+  }, [machines, onValueChange, value]);
 
   return (
     <Select value={value} onValueChange={(v) => { if (v !== null) onValueChange(v); }}>
@@ -31,7 +40,7 @@ export function MachineSelector({ machines, value, onValueChange }: MachineSelec
       </SelectTrigger>
       <SelectContent>
         {machines.map((m) => (
-          <SelectItem key={`${m.ip}:${m.port}`} value={`${m.ip}:${m.port}`}>
+          <SelectItem key={formatMachineKey(m.ip, m.port)} value={formatMachineKey(m.ip, m.port)}>
             <span className="flex items-center gap-2">
               <span className={`h-1.5 w-1.5 rounded-full ${m.healthy ? "bg-emerald-500" : "bg-gray-300"}`} />
               {m.hostname || m.ip}:{m.port}

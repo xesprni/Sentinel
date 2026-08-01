@@ -1,0 +1,1 @@
+import{r as e}from"./addEventListener-CMgeBs_H.js";function t(t,n){return n!=null&&!e(n)?0:typeof t==`function`?t():t}function n(e,n,r){let i=t(e,r);return typeof i==`number`?i:i?.[n]}function r(e){return typeof e==`function`?e():e}function i(e,t){return t||e===`click`||e===`mousedown`}export{r as n,i as r,n as t};

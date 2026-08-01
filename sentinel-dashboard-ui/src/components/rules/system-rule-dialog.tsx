@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,7 @@ import type { SystemRule } from "@/types/rule";
 
 const thresholdTypes = [
   { value: "highestSystemLoad", label: "Load" },
-  { value: "highestCpuUsage", label: "CPU 使用率 (%)" },
+  { value: "highestCpuUsage", label: "CPU 使用率 (0~1)" },
   { value: "avgRt", label: "平均 RT (ms)" },
   { value: "maxThread", label: "并发线程数" },
   { value: "qps", label: "入口 QPS" },
@@ -37,20 +37,24 @@ function detectType(rule: SystemRule | null | undefined): string {
 }
 
 export function SystemRuleDialog({ open, onOpenChange, rule, onSubmit }: SystemRuleDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{rule?.id ? "编辑系统规则" : "新增系统规则"}</DialogTitle>
+        </DialogHeader>
+        {open && <SystemRuleEditor key={`${rule?.id ?? "new"}-${detectType(rule)}`} rule={rule} onSubmit={onSubmit} onOpenChange={onOpenChange} />}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function SystemRuleEditor({ rule, onSubmit, onOpenChange }: Omit<SystemRuleDialogProps, "open">) {
   const [type, setType] = useState(detectType(rule));
   const [value, setValue] = useState(() => {
     if (!rule) return "0";
     return String((rule as Record<string, unknown>)[detectType(rule)] ?? 0);
   });
-
-  // Reset when dialog opens
-  useEffect(() => {
-    if (open) {
-      const t = detectType(rule);
-      setType(t);
-      setValue(rule ? String((rule as Record<string, unknown>)[t] ?? 0) : "0");
-    }
-  }, [open, rule]);
 
   const handleSubmit = () => {
     const numVal = Number(value);
@@ -65,13 +69,12 @@ export function SystemRuleDialog({ open, onOpenChange, rule, onSubmit }: SystemR
     onOpenChange(false);
   };
 
+  const numericValue = Number(value);
+  const valid = value.trim() !== "" && Number.isFinite(numericValue) && numericValue >= 0
+    && (type !== "highestCpuUsage" || numericValue <= 1);
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>{rule?.id ? "编辑系统规则" : "新增系统规则"}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
+    <div className="space-y-4">
           <RadioGroup value={type} onValueChange={setType}>
             {thresholdTypes.map((t) => (
               <div key={t.value} className="flex items-center space-x-2">
@@ -82,14 +85,13 @@ export function SystemRuleDialog({ open, onOpenChange, rule, onSubmit }: SystemR
           </RadioGroup>
           <div className="space-y-2">
             <Label>阈值</Label>
-            <Input type="number" step="any" value={value} onChange={(e) => setValue(e.target.value)} />
+            <Input type="number" step="any" min="0" max={type === "highestCpuUsage" ? 1 : undefined} value={value} onChange={(e) => setValue(e.target.value)} />
+            {!valid && <p className="text-sm text-destructive">阈值必须为非负数，CPU 使用率范围为 0~1。</p>}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
-            <Button onClick={handleSubmit}>确认</Button>
+            <Button onClick={handleSubmit} disabled={!valid}>确认</Button>
           </DialogFooter>
-        </div>
-      </DialogContent>
-    </Dialog>
+    </div>
   );
 }

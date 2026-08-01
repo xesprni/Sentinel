@@ -1,14 +1,16 @@
 import ky from "ky";
 import type { Result } from "./types";
 
+const apiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || "").trim();
+
 const apiClient = ky.create({
-  prefix: import.meta.env.VITE_API_BASE_URL || "",
+  ...(apiBaseUrl ? { prefixUrl: apiBaseUrl.endsWith("/") ? apiBaseUrl : `${apiBaseUrl}/` } : {}),
   credentials: "include",
   hooks: {
     afterResponse: [
       async (state) => {
         if (state.response.status === 401) {
-          window.location.href = "/#/login";
+          window.location.hash = "#/login";
           return new Response(JSON.stringify({ success: false, msg: "Unauthorized" }), {
             status: 401,
           });

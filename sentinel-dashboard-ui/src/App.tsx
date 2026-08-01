@@ -2,27 +2,29 @@ import { HashRouter, Routes, Route, Navigate, useNavigate } from "react-router-d
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider, useAuth } from "@/hooks/use-auth";
+import { AuthProvider } from "@/hooks/auth-provider";
+import { useAuth } from "@/hooks/use-auth";
 import { AppLayout } from "@/components/layout/app-layout";
-import LoginPage from "@/pages/login";
-import HomePage from "@/pages/home";
-import FlowV1Page from "@/pages/flow-v1";
-import FlowV2Page from "@/pages/flow-v2";
-import DegradePage from "@/pages/degrade";
-import SystemPage from "@/pages/system";
-import AuthorityPage from "@/pages/authority";
-import ParamFlowPage from "@/pages/param-flow";
-import MetricPage from "@/pages/metric";
-import IdentityPage from "@/pages/identity";
-import MachinePage from "@/pages/machine";
-import ClusterServerListPage from "@/pages/cluster/server-list";
-import ClusterClientListPage from "@/pages/cluster/client-list";
-import ClusterAssignManagePage from "@/pages/cluster/assign-manage";
-import ClusterSingleConfigPage from "@/pages/cluster/single-config";
-import GatewayIdentityPage from "@/pages/gateway/identity";
-import GatewayApiPage from "@/pages/gateway/api-management";
-import GatewayFlowPage from "@/pages/gateway/flow";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
+
+const LoginPage = lazy(() => import("@/pages/login"));
+const HomePage = lazy(() => import("@/pages/home"));
+const FlowV1Page = lazy(() => import("@/pages/flow-v1"));
+const FlowV2Page = lazy(() => import("@/pages/flow-v2"));
+const DegradePage = lazy(() => import("@/pages/degrade"));
+const SystemPage = lazy(() => import("@/pages/system"));
+const AuthorityPage = lazy(() => import("@/pages/authority"));
+const ParamFlowPage = lazy(() => import("@/pages/param-flow"));
+const MetricPage = lazy(() => import("@/pages/metric"));
+const IdentityPage = lazy(() => import("@/pages/identity"));
+const MachinePage = lazy(() => import("@/pages/machine"));
+const ClusterServerListPage = lazy(() => import("@/pages/cluster/server-list"));
+const ClusterClientListPage = lazy(() => import("@/pages/cluster/client-list"));
+const ClusterAssignManagePage = lazy(() => import("@/pages/cluster/assign-manage"));
+const ClusterSingleConfigPage = lazy(() => import("@/pages/cluster/single-config"));
+const GatewayIdentityPage = lazy(() => import("@/pages/gateway/identity"));
+const GatewayApiPage = lazy(() => import("@/pages/gateway/api-management"));
+const GatewayFlowPage = lazy(() => import("@/pages/gateway/flow"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,7 +65,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function AppRoutes() {
   return (
-    <Routes>
+    <Suspense fallback={<PageLoading />}>
+      <Routes>
       <Route path="/login" element={<LoginPage />} />
 
       <Route
@@ -104,8 +107,13 @@ function AppRoutes() {
       </Route>
 
       <Route path="*" element={<Navigate to="/dashboard/home" replace />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
+}
+
+function PageLoading() {
+  return <div className="flex min-h-40 items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
 }
 
 export default function App() {

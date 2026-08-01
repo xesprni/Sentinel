@@ -89,6 +89,9 @@ public class DegradeController {
             return Result.ofSuccess(rules);
         } catch (Throwable throwable) {
             logger.error("queryApps error:", throwable);
+            if (rulePersistenceService != null) {
+                return Result.ofSuccess(repository.findAllByApp(app));
+            }
             return Result.ofThrowable(-1, throwable);
         }
     }

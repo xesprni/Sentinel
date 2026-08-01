@@ -14,6 +14,7 @@ import { Pencil, Trash2, Plus, RefreshCw } from "lucide-react";
 import * as flowV1Api from "@/api/flow-v1";
 import { toast } from "sonner";
 import type { FlowRule } from "@/types/rule";
+import { parseMachineKey } from "@/lib/machine";
 
 const gradeMap: Record<number, string> = { 1: "QPS", 0: "线程数" };
 const strategyMap: Record<number, string> = { 0: "直接", 1: "关联", 2: "链路" };
@@ -29,9 +30,7 @@ export default function FlowV1Page() {
   const [editRule, setEditRule] = useState<FlowRule | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<FlowRule | null>(null);
 
-  const machineParts = selectedMachine.split(":");
-  const ip = machineParts[0] || undefined;
-  const port = machineParts[1] ? Number(machineParts[1]) : undefined;
+  const { ip, port } = parseMachineKey(selectedMachine);
 
   const { data: rules = [], isLoading } = useQuery({
     queryKey: ["flow-v1", app, ip, port],
@@ -67,10 +66,10 @@ export default function FlowV1Page() {
   });
 
   const handleSubmit = useCallback((rule: FlowRule) => {
-    const payload = { ...rule, app };
+    const payload = { ...rule, app, ip, port };
     if (rule.id) updateMut.mutate(payload);
     else addMut.mutate(payload);
-  }, [app, addMut, updateMut]);
+  }, [app, ip, port, addMut, updateMut]);
 
   const filtered = rules.filter((r) =>
     r.resource.toLowerCase().includes(search.toLowerCase()),
@@ -82,10 +81,10 @@ export default function FlowV1Page() {
         <h1 className="text-xl font-semibold">流控规则 (V1)</h1>
         <Badge variant="secondary">{filtered.length} 条规则</Badge>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <MachineSelector machines={machines || []} value={selectedMachine} onValueChange={setSelectedMachine} />
         <SearchInput value={search} onChange={setSearch} placeholder="搜索资源名" />
-        <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => qc.invalidateQueries({ queryKey: ["flow-v1"] })}>
+        <Button variant="outline" size="icon" className="h-9 w-9" aria-label="刷新流控规则" onClick={() => qc.invalidateQueries({ queryKey: ["flow-v1"] })}>
           <RefreshCw className="h-4 w-4" />
         </Button>
         <Button size="sm" disabled={!selectedMachine} onClick={() => { setEditRule(null); setDialogOpen(true); }}>
@@ -125,10 +124,10 @@ export default function FlowV1Page() {
                 <TableCell>{r.clusterMode ? "是" : "否"}</TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditRule(r); setDialogOpen(true); }}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={`编辑 ${r.resource}`} onClick={() => { setEditRule(r); setDialogOpen(true); }}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(r)}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" aria-label={`删除 ${r.resource}`} onClick={() => setDeleteTarget(r)}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>

@@ -14,6 +14,7 @@ import { Pencil, Trash2, Plus, RefreshCw } from "lucide-react";
 import * as degradeApi from "@/api/degrade";
 import { toast } from "sonner";
 import type { DegradeRule } from "@/types/rule";
+import { parseMachineKey } from "@/lib/machine";
 
 const gradeMap: Record<number, string> = { 0: "慢调用比例", 1: "异常比例", 2: "异常数" };
 
@@ -27,9 +28,7 @@ export default function DegradePage() {
   const [editRule, setEditRule] = useState<DegradeRule | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DegradeRule | null>(null);
 
-  const mp = selectedMachine.split(":");
-  const ip = mp[0] || undefined;
-  const port = mp[1] ? Number(mp[1]) : undefined;
+  const { ip, port } = parseMachineKey(selectedMachine);
 
   const { data: rules = [], isLoading } = useQuery({
     queryKey: ["degrade", app, ip, port],
@@ -51,10 +50,10 @@ export default function DegradePage() {
   });
 
   const handleSubmit = useCallback((rule: DegradeRule) => {
-    const payload = { ...rule, app };
+    const payload = { ...rule, app, ip, port };
     if (rule.id) updateMut.mutate({ id: rule.id, rule: payload });
     else addMut.mutate(payload);
-  }, [app, addMut, updateMut]);
+  }, [app, ip, port, addMut, updateMut]);
 
   const filtered = rules.filter((r) => r.resource.toLowerCase().includes(search.toLowerCase()));
 
@@ -64,10 +63,10 @@ export default function DegradePage() {
         <h1 className="text-xl font-semibold">熔断规则</h1>
         <Badge variant="secondary">{filtered.length} 条规则</Badge>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <MachineSelector machines={machines || []} value={selectedMachine} onValueChange={setSelectedMachine} />
         <SearchInput value={search} onChange={setSearch} />
-        <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => qc.invalidateQueries({ queryKey: ["degrade"] })}><RefreshCw className="h-4 w-4" /></Button>
+        <Button variant="outline" size="icon" className="h-9 w-9" aria-label="刷新熔断规则" onClick={() => qc.invalidateQueries({ queryKey: ["degrade"] })}><RefreshCw className="h-4 w-4" /></Button>
         <Button size="sm" disabled={!selectedMachine} onClick={() => { setEditRule(null); setDialogOpen(true); }}><Plus className="h-4 w-4 mr-1" />新增</Button>
       </div>
 
@@ -99,8 +98,8 @@ export default function DegradePage() {
                 <TableCell>{r.minRequestAmount}</TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditRule(r); setDialogOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteTarget(r)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={`编辑 ${r.resource}`} onClick={() => { setEditRule(r); setDialogOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" aria-label={`删除 ${r.resource}`} onClick={() => setDeleteTarget(r)}><Trash2 className="h-3.5 w-3.5" /></Button>
                   </div>
                 </TableCell>
               </TableRow>

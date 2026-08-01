@@ -114,11 +114,16 @@ public class ParamFlowRuleController {
             logger.error("Error when querying parameter flow rules", ex.getCause());
             if (isNotSupported(ex.getCause())) {
                 return unsupportedVersion();
+            } else if (rulePersistenceService != null) {
+                return Result.ofSuccess(repository.findAllByApp(app));
             } else {
                 return Result.ofThrowable(-1, ex.getCause());
             }
         } catch (Throwable throwable) {
             logger.error("Error when querying parameter flow rules", throwable);
+            if (rulePersistenceService != null) {
+                return Result.ofSuccess(repository.findAllByApp(app));
+            }
             return Result.ofFail(-1, throwable.getMessage());
         }
     }

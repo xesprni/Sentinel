@@ -5,11 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { SearchInput } from "@/components/shared/search-input";
+import { MachineSelector } from "@/components/shared/app-selector";
+import { EmptyState } from "@/components/shared/empty-state";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { FlowRuleDialog } from "@/components/rules/flow-rule-dialog";
+import { useMachines } from "@/hooks/use-machines";
 import * as flowV2Api from "@/api/flow-v2";
 import { toast } from "sonner";
 import type { FlowRule } from "@/types/rule";
+import { parseMachineKey } from "@/lib/machine";
 
 const gradeMap: Record<number, string> = { 1: "QPS", 0: "线程数" };
 const strategyMap: Record<number, string> = { 0: "直接", 1: "关联", 2: "链路" };
@@ -18,18 +22,22 @@ const behaviorMap: Record<number, string> = { 0: "快速失败", 1: "Warm Up", 2
 export default function FlowV2Page() {
   const { app = "" } = useParams();
   const qc = useQueryClient();
+  const { data: machines } = useMachines(app);
+  const [selectedMachine, setSelectedMachine] = useState("");
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editRule, setEditRule] = useState<FlowRule | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<FlowRule | null>(null);
 
-  const { data: rules = [] } = useQuery({
-    queryKey: ["flow-v2", app],
+  const { ip, port } = parseMachineKey(selectedMachine);
+
+  const { data: rules = [], isLoading } = useQuery({
+    queryKey: ["flow-v2", app, ip, port],
     queryFn: async () => {
-      const res = await flowV2Api.getFlowRules(app);
+      const res = await flowV2Api.getFlowRules(app, ip!, port!);
       return res.data || [];
     },
-    enabled: !!app,
+    enabled: !!app && !!ip && !!port,
   });
 
   const addMut = useMutation({
@@ -57,10 +65,10 @@ export default function FlowV2Page() {
   });
 
   const handleSubmit = useCallback((rule: FlowRule) => {
-    const payload = { ...rule, app };
+    const payload = { ...rule, app, ip, port };
     if (rule.id) updateMut.mutate({ id: rule.id, rule: payload });
     else addMut.mutate(payload);
-  }, [app, addMut, updateMut]);
+  }, [app, ip, port, addMut, updateMut]);
 
   const filtered = rules.filter((r) =>
     r.resource.toLowerCase().includes(search.toLowerCase()),
@@ -69,12 +77,17 @@ export default function FlowV2Page() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">流控规则 (推送模式) — {app}</h1>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <MachineSelector machines={machines || []} value={selectedMachine} onValueChange={setSelectedMachine} />
         <SearchInput value={search} onChange={setSearch} placeholder="搜索资源名" />
         <Button variant="outline" size="sm" onClick={() => qc.invalidateQueries({ queryKey: ["flow-v2"] })}>刷新</Button>
-        <Button size="sm" onClick={() => { setEditRule(null); setDialogOpen(true); }}>新增</Button>
+        <Button size="sm" disabled={!ip || !port} onClick={() => { setEditRule(null); setDialogOpen(true); }}>新增</Button>
       </div>
-      <Table>
+      {!selectedMachine ? (
+        <EmptyState title="请先选择一台机器" description="选择目标机器后查看和管理推送模式流控规则" />
+      ) : isLoading ? (
+        <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-10 animate-pulse rounded bg-muted" />)}</div>
+      ) : <Table>
         <TableHeader>
           <TableRow>
             <TableHead>资源名</TableHead>
@@ -107,7 +120,7 @@ export default function FlowV2Page() {
             <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">暂无数据</TableCell></TableRow>
           )}
         </TableBody>
-      </Table>
+      </Table>}
       <FlowRuleDialog open={dialogOpen} onOpenChange={setDialogOpen} rule={editRule} onSubmit={handleSubmit} />
       <ConfirmDialog
         open={!!deleteTarget}

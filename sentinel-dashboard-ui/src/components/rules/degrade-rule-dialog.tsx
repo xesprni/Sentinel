@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import {
   Dialog,
   DialogContent,
@@ -42,20 +42,21 @@ const degradeLabels: Record<string, string> = { "0": "慢调用比例", "1": "�
 const defaults: FormValues = {
   resource: "", limitApp: "default", grade: 0, count: 0,
   timeWindow: 10, minRequestAmount: 5, statIntervalMs: 1000,
+  slowRatioThreshold: 0.5,
 };
 
 export function DegradeRuleDialog({ open, onOpenChange, rule, onSubmit }: DegradeRuleDialogProps) {
-  const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<FormValues>({
+  const { register, handleSubmit, setValue, reset, control, formState: { errors } } = useForm<FormValues>({
     defaultValues: defaults,
   });
 
   useEffect(() => {
     if (open) {
-      reset(rule ?? defaults);
+      reset({ ...defaults, ...rule });
     }
   }, [open, rule, reset]);
 
-  const grade = watch("grade");
+  const grade = useWatch({ control, name: "grade" });
 
   const onFormSubmit = (data: FormValues) => {
     onSubmit({ ...rule, ...data } as DegradeRule);
@@ -76,7 +77,8 @@ export function DegradeRuleDialog({ open, onOpenChange, rule, onSubmit }: Degrad
           </div>
           <div className="space-y-2">
             <Label>来源应用</Label>
-            <Input {...register("limitApp")} />
+            <Input {...register("limitApp", { required: "来源应用不能为空" })} />
+            {errors.limitApp && <p className="text-sm text-destructive">{errors.limitApp.message}</p>}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -92,28 +94,38 @@ export function DegradeRuleDialog({ open, onOpenChange, rule, onSubmit }: Degrad
             </div>
             <div className="space-y-2">
               <Label>阈值</Label>
-              <Input type="number" step="any" {...register("count", { valueAsNumber: true })} />
+              <Input type="number" step="any" min="0" max={grade === 1 ? 1 : undefined} {...register("count", {
+                valueAsNumber: true,
+                required: "阈值不能为空",
+                min: { value: 0, message: "阈值不能为负" },
+                validate: (value) => grade !== 1 || value <= 1 || "异常比例阈值必须在 0~1",
+              })} />
+              {errors.count && <p className="text-sm text-destructive">{errors.count.message}</p>}
             </div>
           </div>
           {grade === 0 && (
             <div className="space-y-2">
               <Label>慢调用比例阈值 (0~1)</Label>
-              <Input type="number" step="0.01" min="0" max="1" {...register("slowRatioThreshold", { valueAsNumber: true })} />
+              <Input type="number" step="0.01" min="0" max="1" {...register("slowRatioThreshold", { valueAsNumber: true, required: "慢调用比例不能为空", min: 0, max: 1 })} />
+              {errors.slowRatioThreshold && <p className="text-sm text-destructive">慢调用比例必须在 0~1</p>}
             </div>
           )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>熔断时长 (秒)</Label>
-              <Input type="number" {...register("timeWindow", { valueAsNumber: true })} />
+              <Input type="number" min="1" {...register("timeWindow", { valueAsNumber: true, required: true, min: 1 })} />
+              {errors.timeWindow && <p className="text-sm text-destructive">熔断时长必须大于 0</p>}
             </div>
             <div className="space-y-2">
               <Label>最小请求数</Label>
-              <Input type="number" {...register("minRequestAmount", { valueAsNumber: true })} />
+              <Input type="number" min="1" {...register("minRequestAmount", { valueAsNumber: true, required: true, min: 1 })} />
+              {errors.minRequestAmount && <p className="text-sm text-destructive">最小请求数必须大于 0</p>}
             </div>
           </div>
           <div className="space-y-2">
             <Label>统计时长 (ms)</Label>
-            <Input type="number" {...register("statIntervalMs", { valueAsNumber: true })} />
+            <Input type="number" min="1" {...register("statIntervalMs", { valueAsNumber: true, required: true, min: 1 })} />
+            {errors.statIntervalMs && <p className="text-sm text-destructive">统计时长必须大于 0</p>}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>取消</Button>

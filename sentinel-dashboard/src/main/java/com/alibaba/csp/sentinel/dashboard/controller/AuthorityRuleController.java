@@ -89,6 +89,9 @@ public class AuthorityRuleController {
             return Result.ofSuccess(rules);
         } catch (Throwable throwable) {
             logger.error("Error when querying authority rules", throwable);
+            if (rulePersistenceService != null) {
+                return Result.ofSuccess(repository.findAllByApp(app));
+            }
             return Result.ofFail(-1, throwable.getMessage());
         }
     }

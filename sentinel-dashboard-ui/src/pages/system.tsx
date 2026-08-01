@@ -13,6 +13,7 @@ import { Pencil, Trash2, Plus, RefreshCw } from "lucide-react";
 import * as systemApi from "@/api/system";
 import { toast } from "sonner";
 import type { SystemRule } from "@/types/rule";
+import { parseMachineKey } from "@/lib/machine";
 
 function getThresholdInfo(rule: SystemRule) {
   if (rule.highestSystemLoad !== undefined) return { type: "Load", value: rule.highestSystemLoad };
@@ -33,9 +34,7 @@ export default function SystemPage() {
   const [editRule, setEditRule] = useState<SystemRule | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SystemRule | null>(null);
 
-  const mp = selectedMachine.split(":");
-  const ip = mp[0] || undefined;
-  const port = mp[1] ? Number(mp[1]) : undefined;
+  const { ip, port } = parseMachineKey(selectedMachine);
 
   const { data: rules = [], isLoading } = useQuery({
     queryKey: ["system", app, ip, port],
@@ -57,10 +56,10 @@ export default function SystemPage() {
   });
 
   const handleSubmit = useCallback((rule: SystemRule) => {
-    const payload = { ...rule, app };
+    const payload = { ...rule, app, ip, port };
     if (rule.id) updateMut.mutate(payload);
     else addMut.mutate(payload);
-  }, [app, addMut, updateMut]);
+  }, [app, ip, port, addMut, updateMut]);
 
   const filtered = rules.filter((r) => {
     const info = getThresholdInfo(r);
@@ -73,10 +72,10 @@ export default function SystemPage() {
         <h1 className="text-xl font-semibold">系统规则</h1>
         <span className="text-sm text-muted-foreground">{filtered.length} 条规则</span>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <MachineSelector machines={machines || []} value={selectedMachine} onValueChange={setSelectedMachine} />
         <SearchInput value={search} onChange={setSearch} placeholder="搜索阈值类型" />
-        <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => qc.invalidateQueries({ queryKey: ["system"] })}><RefreshCw className="h-4 w-4" /></Button>
+        <Button variant="outline" size="icon" className="h-9 w-9" aria-label="刷新系统规则" onClick={() => qc.invalidateQueries({ queryKey: ["system"] })}><RefreshCw className="h-4 w-4" /></Button>
         <Button size="sm" disabled={!selectedMachine} onClick={() => { setEditRule(null); setDialogOpen(true); }}><Plus className="h-4 w-4 mr-1" />新增</Button>
       </div>
 
@@ -102,8 +101,8 @@ export default function SystemPage() {
                   <TableCell>{info.value}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditRule(r); setDialogOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteTarget(r)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={`编辑 ${info.type} 规则`} onClick={() => { setEditRule(r); setDialogOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" aria-label={`删除 ${info.type} 规则`} onClick={() => setDeleteTarget(r)}><Trash2 className="h-3.5 w-3.5" /></Button>
                     </div>
                   </TableCell>
                 </TableRow>

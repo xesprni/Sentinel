@@ -91,6 +91,9 @@ public class SystemController {
             return Result.ofSuccess(rules);
         } catch (Throwable throwable) {
             logger.error("Query machine system rules error", throwable);
+            if (rulePersistenceService != null) {
+                return Result.ofSuccess(repository.findAllByApp(app));
+            }
             return Result.ofThrowable(-1, throwable);
         }
     }

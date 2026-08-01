@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useParams, useLocation } from "react-router-dom";
+import { Link, useParams, useLocation, useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -63,6 +63,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
   const { data: apps } = useApps();
   const { app: selectedApp } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
 
   const filteredApps = (apps || []).filter((a) =>
@@ -116,9 +117,14 @@ export function Sidebar({ collapsed }: SidebarProps) {
                   <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">网关</Badge>
                 )}
                 {isActive && (
-                  <Link to="/dashboard/home" onClick={(e) => e.stopPropagation()} className="shrink-0 hover:bg-sidebar-accent rounded-sm p-0.5">
-                      <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                  </Link>
+                  <button
+                    type="button"
+                    aria-label={`关闭应用 ${app.app}`}
+                    onClick={(event) => { event.preventDefault(); event.stopPropagation(); navigate("/dashboard/home"); }}
+                    className="shrink-0 rounded-sm p-0.5 hover:bg-sidebar-accent"
+                  >
+                    <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                  </button>
                 )}
               </Link>
             );

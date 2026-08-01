@@ -83,7 +83,7 @@ export default function MetricPage() {
           {desc ? "降序" : "升序"}
         </Button>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <SearchInput value={searchKey} onChange={setSearchKey} placeholder="搜索资源名" />
       </div>
 
